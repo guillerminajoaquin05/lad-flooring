@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Cuenta — Lad Flooring</title>
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .account-layout { display:grid; grid-template-columns: 240px 1fr; gap:40px; align-items:start; }
+  .account-nav { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow: var(--shadow-card); }
+  .account-nav button { display:block; width:100%; text-align:left; padding:14px 18px; border:none; background:none; font-family:var(--font-serif); font-size:0.95rem; cursor:pointer; border-bottom:1px solid var(--border); color:var(--navy); }
+  .account-nav button.active { background:var(--navy); color:var(--cream); }
+  .account-nav button:last-child { border-bottom:none; }
+  .order-card { border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:16px; background:var(--white); box-shadow: var(--shadow-card); transition: transform 0.25s ease, box-shadow 0.25s ease; }
+  .order-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-soft); }
+  .order-head { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:10px; font-size:0.85rem; color:#5C7784; }
+  .status-pill { display:inline-block; padding:3px 12px; border-radius:20px; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; }
+  .status-entregado { background:#DCEEE1; color:#2F6B45; }
+  .status-camino { background:#DCE9F0; color:#2C5E77; }
+  .status-pendiente { background:#F5E6C8; color:#8A6417; }
+  .order-item { display:flex; align-items:center; gap:14px; padding:8px 0; }
+  .order-item .ph { width:56px; height:56px; border-radius:var(--radius-sm); flex-shrink:0; }
+  @media (max-width: 800px) { .account-layout { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body data-page="usuario">
+
+<div id="lad-header"></div>
+
+<section class="section-tight">
+  <div class="container">
+    <h1>Mi Cuenta</h1>
+    <div class="account-layout">
+      <nav class="account-nav">
+        <button class="active" data-tab="compras">Mis Compras</button>
+        <button data-tab="datos">Mis Datos</button>
+        <button data-tab="envios">Seguimiento de Envíos</button>
+        <button onclick="if (confirm('¿Estás seguro de que querés cerrar sesión?')) { ladLogout().then(() => window.location.href='login.html'); }">Cerrar sesión</button>
+      </nav>
+
+      <div>
+        <div id="tabCompras">
+          <h3 style="margin-bottom:16px;">Historial de compras</h3>
+          <div id="ordersList"></div>
+        </div>
+
+        <div id="tabDatos" style="display:none;">
+          <div class="form-card" style="max-width:480px;margin:0;">
+            <div class="field"><label>Nombre</label><input type="text" id="datosNombre"></div>
+            <div class="field"><label>Apellido</label><input type="text" id="datosApellido"></div>
+            <div class="field"><label>Email</label><input type="email" id="datosEmail" disabled style="opacity:0.6;"></div>
+            <div class="checkbox-row" style="margin-bottom:20px;"><input type="checkbox" id="datosNewsletter"> Recibir novedades por email</div>
+            <button class="btn btn-primary" id="btnGuardarDatos">Guardar cambios</button>
+            <span id="datosMsg" style="display:block;margin-top:10px;font-size:0.85rem;"></span>
+          </div>
+        </div>
+
+        <div id="tabEnvios" style="display:none;">
+          <p>Para ver el detalle y seguimiento de tus envíos activos, visitá la sección de <a href="envio.html" style="color:var(--gold);">Seguimiento de Envío</a>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="lad-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/products.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/common.js"></script>
+<script>
+  const statusLabel = { preparando: 'Preparando', despachado: 'Despachado', en_camino: 'En camino', entregado: 'Entregado' };
+  const statusClass = { preparando: 'pendiente', despachado: 'pendiente', en_camino: 'camino', entregado: 'entregado' };
+
+  async function loadOrders() {
+    const list = document.getElementById('ordersList');
+    if (!ladSupabase) {
+      list.innerHTML = '<p style="color:#8199a3;">Supabase todavía no está conectado.</p>';
+      return;
+    }
+    const { data: orders, error } = await ladSupabase
+      .from('orders')
+      .select('id, created_at, order_status, total, order_items(qty, unit_price, products(name, image_url))')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      list.innerHTML = `<p style="color:#A94442;">No pudimos cargar tus compras: ${error.message}</p>`;
+      return;
+    }
+    if (!orders || orders.length === 0) {
+      list.innerHTML = '<p style="color:#8199a3;">Todavía no hiciste ninguna compra. <a href="tienda.html" style="color:var(--gold);">Ir a la tienda</a></p>';
+      return;
+    }
+
+    list.innerHTML = orders.map(o => `
+      <div class="order-card">
+        <div class="order-head">
+          <span>Pedido #${o.id} — ${new Date(o.created_at).toLocaleDateString('es-AR')}</span>
+          <span class="status-pill status-${statusClass[o.order_status] || 'pendiente'}">${statusLabel[o.order_status] || o.order_status}</span>
+        </div>
+        ${o.order_items.map(item => `
+          <div class="order-item">
+            <div class="ph ${item.products ? item.products.image_url : 'ph-1'}"></div>
+            <div style="flex:1;">${item.products ? item.products.name : 'Producto'} × ${item.qty}</div>
+          </div>`).join('')}
+        <div class="flex-between" style="margin-top:10px;">
+          <strong>Total: ${ladFormatPrice(o.total)}</strong>
+          <a href="envio.html?pedido=${o.id}" class="btn btn-outline btn-sm" style="color:var(--navy);border-color:var(--navy);">Ver seguimiento</a>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function loadDatos(session) {
+    document.getElementById('datosNombre').value = session.nombre || '';
+    document.getElementById('datosApellido').value = session.apellido || '';
+    document.getElementById('datosEmail').value = session.email || '';
+    document.getElementById('datosNewsletter').checked = !!session.newsletter;
+  }
+
+  document.getElementById('btnGuardarDatos').addEventListener('click', async () => {
+    const msg = document.getElementById('datosMsg');
+    const session = await ladGetSession();
+    if (!session || !ladSupabase) return;
+    const { error } = await ladSupabase.from('profiles').update({
+      nombre: document.getElementById('datosNombre').value,
+      apellido: document.getElementById('datosApellido').value,
+      newsletter: document.getElementById('datosNewsletter').checked
+    }).eq('id', session.id);
+    msg.style.color = error ? '#A94442' : '#3d8a5c';
+    msg.textContent = error ? error.message : 'Cambios guardados.';
+  });
+
+  (async function initUsuario() {
+    if (!(await ladIsLoggedIn())) {
+      window.location.href = 'login.html?redirect=' + encodeURIComponent('usuario.html');
+      return;
+    }
+    const session = await ladGetSession();
+    if (session && session.role === 'admin' && !new URLSearchParams(window.location.search).get('stay')) {
+      window.location.href = 'admin.html';
+      return;
+    }
+    loadDatos(session);
+    loadOrders();
+  })();
+
+  document.querySelectorAll('.account-nav button[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.account-nav button[data-tab]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      ['compras', 'datos', 'envios'].forEach(t => {
+        document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = (t === btn.dataset.tab) ? 'block' : 'none';
+      });
+    });
+  });
+</script>
+</body>
+</html>

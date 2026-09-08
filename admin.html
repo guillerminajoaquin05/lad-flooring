@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de Administración — Lad Flooring</title>
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .admin-table-wrap { border-radius: var(--radius); overflow:hidden; box-shadow: var(--shadow-card); border:1px solid var(--border); }
+  .admin-table { width:100%; border-collapse:collapse; background:var(--white); }
+  .admin-table th, .admin-table td { padding:12px 14px; border-bottom:1px solid var(--border); text-align:left; font-size:0.9rem; vertical-align:middle; }
+  .admin-table th { background:var(--cream); font-weight:normal; color:var(--navy); letter-spacing:0.3px; }
+  .admin-thumb { width:46px; height:46px; border-radius:var(--radius-sm); display:inline-block; }
+  .row-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .row-actions button { font-size:0.78rem; padding:6px 10px; border-radius:var(--radius-full); border:1px solid var(--border); background:var(--white); cursor:pointer; font-family:var(--font-serif); }
+  .row-actions button:hover { border-color:var(--gold); color:var(--gold); }
+  .status-dot { display:inline-flex; align-items:center; gap:6px; font-size:0.82rem; }
+  .status-dot::before { content:''; width:8px; height:8px; border-radius:50%; background:#3d8a5c; }
+  .status-dot.hidden-status::before { background:#B0B8BC; }
+
+  .modal-overlay { position:fixed; inset:0; background:rgba(20,40,47,0.55); backdrop-filter: blur(6px); display:none; align-items:center; justify-content:center; z-index:200; padding:20px; }
+  .modal-overlay.open { display:flex; }
+  .modal-box { background:var(--white); border-radius:var(--radius-lg); width:100%; max-width:560px; max-height:90vh; overflow-y:auto; padding:32px; position:relative; box-shadow: var(--shadow-float); }
+  .modal-close { position:absolute; top:16px; right:18px; background:none; border:none; font-size:1.3rem; cursor:pointer; color:var(--navy); }
+  .buyer-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); font-size:0.88rem; }
+</style>
+</head>
+<body data-page="admin">
+
+<div id="lad-header"></div>
+
+<section class="section-tight">
+  <div class="container">
+    <div class="flex-between" style="margin-bottom:8px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <span class="eyebrow">Panel privado</span>
+        <h1 class="mt-0">Administración</h1>
+      </div>
+    </div>
+
+    <div class="tag-filters" id="adminTabs" style="margin-bottom:24px;">
+      <button data-tab="pedidos" class="active">Pedidos</button>
+      <button data-tab="productos">Productos</button>
+      <button data-tab="servicios">Servicios</button>
+    </div>
+
+    <div id="tabAdminPedidos">
+      <div class="flex-between" style="margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+        <h3 class="mt-0">Pedidos</h3>
+      </div>
+      <div class="admin-table-wrap" style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Pedido</th>
+              <th>Cliente</th>
+              <th>Fecha</th>
+              <th>Total</th>
+              <th>Pago</th>
+              <th>Estado del envío</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="adminOrdersTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tabAdminProductos" style="display:none;">
+      <div class="flex-between" style="margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+        <h3 class="mt-0">Productos de la tienda</h3>
+        <button class="btn btn-primary" id="btnNuevoProducto">+ Agregar producto</button>
+      </div>
+      <div class="admin-table-wrap" style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Producto</th>
+              <th>Línea</th>
+              <th>Precio</th>
+              <th>Stock</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="adminTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tabAdminServicios" style="display:none;">
+      <div class="flex-between" style="margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+        <h3 class="mt-0">Servicios</h3>
+        <button class="btn btn-primary" id="btnNuevoServicio">+ Agregar servicio</button>
+      </div>
+      <div class="admin-table-wrap" style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Servicio</th>
+              <th>Categoría</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="adminServicesTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="lad-footer"></div>
+
+<!-- Modal: alta / edición de producto -->
+<div class="modal-overlay" id="productModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('productModal')">✕</button>
+    <h3 id="productModalTitle">Agregar producto</h3>
+    <form id="productForm">
+      <input type="hidden" id="pId">
+      <div class="field"><label>Título</label><input type="text" id="pName" required></div>
+      <div class="grid grid-2" style="gap:16px;">
+        <div class="field"><label>Línea</label>
+          <select id="pLine"><option value="bona">Bona</option><option value="flotantes">Pisos Flotantes</option></select>
+        </div>
+        <div class="field"><label>Categoría</label><input type="text" id="pCategory" placeholder="Ej: Mantenimiento"></div>
+      </div>
+      <div class="grid grid-2" style="gap:16px;">
+        <div class="field"><label>Precio</label><input type="number" id="pPrice" required></div>
+        <div class="field"><label>Stock</label><input type="number" id="pStock" required></div>
+      </div>
+      <div class="field">
+        <label>Imagen (placeholder de color, hasta integrar carga de archivos)</label>
+        <select id="pImg">
+          <option value="ph-1">Placeholder 1 (navy)</option>
+          <option value="ph-2">Placeholder 2 (steel blue)</option>
+          <option value="ph-3">Placeholder 3 (gold)</option>
+          <option value="ph-4">Placeholder 4 (cream)</option>
+          <option value="ph-5">Placeholder 5 (navy oscuro)</option>
+        </select>
+      </div>
+      <div class="field"><label>Descripción</label><textarea id="pDescription" rows="3"></textarea></div>
+      <div class="checkbox-row" style="margin-bottom:20px;"><input type="checkbox" id="pHidden"> Ocultar producto en la tienda</div>
+      <button type="submit" class="btn btn-primary btn-block">Guardar producto</button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: alta / edición de servicio -->
+<div class="modal-overlay" id="serviceModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('serviceModal')">✕</button>
+    <h3 id="serviceModalTitle">Agregar servicio</h3>
+    <form id="serviceForm">
+      <input type="hidden" id="sId">
+      <div class="field"><label>Título</label><input type="text" id="sName" required></div>
+      <div class="field"><label>Categoría</label>
+        <select id="sCategory">
+          <option value="Pisos de Madera">Pisos de Madera</option>
+          <option value="Outdoors">Outdoors</option>
+          <option value="Pisos Deportivos">Pisos Deportivos</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Imagen (placeholder de color, hasta integrar carga de archivos)</label>
+        <select id="sImg">
+          <option value="ph-1">Placeholder 1 (navy)</option>
+          <option value="ph-2">Placeholder 2 (steel blue)</option>
+          <option value="ph-3">Placeholder 3 (gold)</option>
+          <option value="ph-4">Placeholder 4 (cream)</option>
+          <option value="ph-5">Placeholder 5 (navy oscuro)</option>
+        </select>
+      </div>
+      <div class="field"><label>Descripción corta (para la grilla de Servicios)</label><textarea id="sShortDescription" rows="2" required></textarea></div>
+      <div class="field"><label>Descripción completa (para la ficha del servicio)</label><textarea id="sDescription" rows="4" required></textarea></div>
+      <div class="field"><label>¿Qué incluye? (un punto por línea)</label><textarea id="sIncludes" rows="4" placeholder="Un ítem por renglón"></textarea></div>
+      <div class="checkbox-row" style="margin-bottom:20px;"><input type="checkbox" id="sHidden"> Ocultar servicio en el sitio</div>
+      <button type="submit" class="btn btn-primary btn-block">Guardar servicio</button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: compradores -->
+<div class="modal-overlay" id="buyersModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('buyersModal')">✕</button>
+    <h3 id="buyersModalTitle">Compradores</h3>
+    <div id="buyersList"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/products.js"></script>
+<script src="js/services.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/common.js"></script>
+<script>
+  function ladSlugify(text) {
+    return text.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  }
+
+  let adminProducts = [];
+
+  async function loadAdminProducts() {
+    const { data, error } = await ladSupabase
+      .from('products')
+      .select('*')
+      .order('name');
+    if (error) { alert('No pudimos cargar los productos: ' + error.message); return; }
+    adminProducts = data.map(ladMapProduct);
+    renderAdminTable();
+  }
+
+  function renderAdminTable() {
+    document.getElementById('adminTbody').innerHTML = adminProducts.map(p => `
+      <tr>
+        <td><div class="admin-thumb ph ${p.img}"></div></td>
+        <td>${p.name}</td>
+        <td>${p.line === 'bona' ? 'Línea Bona' : 'Pisos Flotantes'}</td>
+        <td>${ladFormatPrice(p.price)}</td>
+        <td>${p.stock}</td>
+        <td><span class="status-dot ${p.hidden ? 'hidden-status' : ''}">${p.hidden ? 'Oculto' : 'Visible'}</span></td>
+        <td>
+          <div class="row-actions">
+            <button onclick="editProduct('${p.id}')">Editar</button>
+            <button onclick="toggleHidden('${p.id}')">${p.hidden ? 'Mostrar' : 'Ocultar'}</button>
+            <button onclick="viewBuyers('${p.id}', '${p.name.replace(/'/g, "\\'")}')">Compradores</button>
+            <button onclick="deleteProduct('${p.id}')" style="color:#A94442;">Eliminar</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  document.getElementById('btnNuevoProducto').addEventListener('click', () => {
+    document.getElementById('productModalTitle').textContent = 'Agregar producto';
+    document.getElementById('productForm').reset();
+    document.getElementById('pId').value = '';
+    openModal('productModal');
+  });
+
+  function editProduct(id) {
+    const p = adminProducts.find(x => x.id === id);
+    document.getElementById('productModalTitle').textContent = 'Editar producto';
+    document.getElementById('pId').value = p.id;
+    document.getElementById('pName').value = p.name;
+    document.getElementById('pLine').value = p.line;
+    document.getElementById('pCategory').value = p.category;
+    document.getElementById('pPrice').value = p.price;
+    document.getElementById('pStock').value = p.stock;
+    document.getElementById('pImg').value = p.img;
+    document.getElementById('pDescription').value = p.description;
+    document.getElementById('pHidden').checked = p.hidden;
+    openModal('productModal');
+  }
+
+  async function toggleHidden(id) {
+    const p = adminProducts.find(x => x.id === id);
+    const { error } = await ladSupabase.from('products').update({ hidden: !p.hidden }).eq('id', id);
+    if (error) { alert('No pudimos actualizar el producto: ' + error.message); return; }
+    await loadAdminProducts();
+  }
+
+  async function deleteProduct(id) {
+    if (!confirm('¿Eliminar este producto? Esta acción no se puede deshacer.')) return;
+    const { error } = await ladSupabase.from('products').delete().eq('id', id);
+    if (error) { alert('No pudimos eliminar el producto: ' + error.message); return; }
+    await loadAdminProducts();
+  }
+
+  async function viewBuyers(id, name) {
+    document.getElementById('buyersModalTitle').textContent = 'Compradores — ' + name;
+    const list = document.getElementById('buyersList');
+    list.innerHTML = '<p style="color:#8199a3;">Cargando...</p>';
+    openModal('buyersModal');
+
+    const { data, error } = await ladSupabase
+      .from('order_items')
+      .select('qty, orders(created_at, email, nombre, apellido)')
+      .eq('product_id', id);
+
+    if (error) {
+      list.innerHTML = `<p style="color:#A94442;">No pudimos cargar los compradores: ${error.message}</p>`;
+      return;
+    }
+    if (!data || data.length === 0) {
+      list.innerHTML = '<p style="color:#8199a3;">Todavía nadie compró este producto.</p>';
+      return;
+    }
+    list.innerHTML = data.map(row => `
+      <div class="buyer-row">
+        <span><strong>${row.orders.nombre} ${row.orders.apellido}</strong><br><span style="color:#8199a3;">${row.orders.email}</span></span>
+        <span style="text-align:right;">Cant: ${row.qty}<br><span style="color:#8199a3;">${new Date(row.orders.created_at).toLocaleDateString('es-AR')}</span></span>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('productForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('pId').value;
+    const data = {
+      name: document.getElementById('pName').value,
+      line: document.getElementById('pLine').value,
+      category: document.getElementById('pCategory').value || 'General',
+      price: parseFloat(document.getElementById('pPrice').value),
+      stock: parseInt(document.getElementById('pStock').value),
+      image_url: document.getElementById('pImg').value,
+      description: document.getElementById('pDescription').value,
+      hidden: document.getElementById('pHidden').checked
+    };
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+
+    let error;
+    if (id) {
+      ({ error } = await ladSupabase.from('products').update(data).eq('id', id));
+    } else {
+      const newId = ladSlugify(data.name) + '-' + Date.now().toString(36).slice(-4);
+      ({ error } = await ladSupabase.from('products').insert({ id: newId, ...data }));
+    }
+
+    submitBtn.disabled = false;
+    if (error) { alert('No pudimos guardar el producto: ' + error.message); return; }
+    closeModal('productModal');
+    await loadAdminProducts();
+  });
+
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('open'); });
+  });
+
+  // Pestañas Pedidos / Productos / Servicios
+  document.querySelectorAll('#adminTabs button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#adminTabs button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tabAdminPedidos').style.display = btn.dataset.tab === 'pedidos' ? 'block' : 'none';
+      document.getElementById('tabAdminProductos').style.display = btn.dataset.tab === 'productos' ? 'block' : 'none';
+      document.getElementById('tabAdminServicios').style.display = btn.dataset.tab === 'servicios' ? 'block' : 'none';
+    });
+  });
+
+  // ---------- Pedidos ----------
+  const ORDER_STATUS_LABELS = { preparando: 'Preparando', despachado: 'Despachado', en_camino: 'En camino', entregado: 'Entregado' };
+  const PAY_STATUS_LABELS = { pendiente: 'Pendiente', aprobado: 'Aprobado', rechazado: 'Rechazado' };
+
+  async function loadAdminOrders() {
+    const { data, error } = await ladSupabase
+      .from('orders')
+      .select('*, order_items(qty, unit_price, products(name))')
+      .order('created_at', { ascending: false });
+    if (error) { alert('No pudimos cargar los pedidos: ' + error.message); return; }
+
+    document.getElementById('adminOrdersTbody').innerHTML = data.map(o => {
+      const needsApproval = o.payment_method === 'transferencia' && o.payment_status === 'pendiente';
+      const payColor = o.payment_status === 'aprobado' ? '#3d8a5c' : (o.payment_status === 'rechazado' ? '#A94442' : '#8A6417');
+      const statusOptions = Object.keys(ORDER_STATUS_LABELS).map(key =>
+        `<option value="${key}" ${o.order_status === key ? 'selected' : ''}>${ORDER_STATUS_LABELS[key]}</option>`
+      ).join('');
+      return `
+        <tr>
+          <td>#${o.id}</td>
+          <td>${o.nombre} ${o.apellido}<br><span style="color:#8199a3;font-size:0.8rem;">${o.email}</span></td>
+          <td>${new Date(o.created_at).toLocaleDateString('es-AR')}</td>
+          <td>${ladFormatPrice(o.total)}</td>
+          <td>
+            ${o.payment_method === 'mp' ? 'Mercado Pago' : 'Transferencia'}<br>
+            <span style="color:${payColor};font-size:0.8rem;">${PAY_STATUS_LABELS[o.payment_status] || o.payment_status}</span>
+          </td>
+          <td>
+            <select onchange="updateOrderStatus('${o.id}', this.value)" style="font-family:var(--font-serif);padding:6px 8px;border-radius:var(--radius-sm);border:1px solid var(--border);">
+              ${statusOptions}
+            </select>
+          </td>
+          <td>
+            <div class="row-actions">
+              <button onclick="viewOrderItems('${o.id}')">Ver items</button>
+              ${needsApproval ? `<button onclick="approvePayment('${o.id}')" style="color:#3d8a5c;border-color:#3d8a5c;">Aprobar pago</button>` : ''}
+              <button onclick="deleteOrder('${o.id}')" style="color:#A94442;">Eliminar</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    window._adminOrdersCache = data;
+  }
+
+  async function updateOrderStatus(orderId, newStatus) {
+    const { error } = await ladSupabase.from('orders').update({ order_status: newStatus }).eq('id', orderId);
+    if (error) { alert('No pudimos actualizar el estado: ' + error.message); await loadAdminOrders(); }
+  }
+
+  async function approvePayment(orderId) {
+    if (!confirm('¿Confirmás que se recibió la transferencia y aprobás este pedido?')) return;
+    const { error } = await ladSupabase.from('orders').update({ payment_status: 'aprobado' }).eq('id', orderId);
+    if (error) { alert('No pudimos aprobar el pago: ' + error.message); return; }
+    await loadAdminOrders();
+  }
+
+  async function deleteOrder(orderId) {
+    if (!confirm('¿Eliminar este pedido? Esta acción no se puede deshacer.')) return;
+    await ladSupabase.from('order_items').delete().eq('order_id', orderId);
+    const { error } = await ladSupabase.from('orders').delete().eq('id', orderId);
+    if (error) { alert('No pudimos eliminar el pedido: ' + error.message); return; }
+    await loadAdminOrders();
+  }
+
+  function viewOrderItems(orderId) {
+    const order = (window._adminOrdersCache || []).find(o => String(o.id) === String(orderId));
+    if (!order) return;
+    document.getElementById('buyersModalTitle').textContent = 'Pedido #' + order.id;
+    document.getElementById('buyersList').innerHTML = order.order_items.map(item => `
+      <div class="buyer-row">
+        <span>${item.products ? item.products.name : 'Producto'}</span>
+        <span>x${item.qty} — ${ladFormatPrice(item.unit_price * item.qty)}</span>
+      </div>
+    `).join('');
+    openModal('buyersModal');
+  }
+
+  // ---------- Servicios ----------
+  let adminServices = [];
+
+  async function loadAdminServices() {
+    const { data, error } = await ladSupabase
+      .from('services')
+      .select('*')
+      .order('name');
+    if (error) { alert('No pudimos cargar los servicios: ' + error.message); return; }
+    adminServices = data.map(ladMapService);
+    renderAdminServicesTable();
+  }
+
+  function renderAdminServicesTable() {
+    document.getElementById('adminServicesTbody').innerHTML = adminServices.map(s => `
+      <tr>
+        <td><div class="admin-thumb ph ${s.img}"></div></td>
+        <td>${s.name}</td>
+        <td>${s.category}</td>
+        <td><span class="status-dot ${s.hidden ? 'hidden-status' : ''}">${s.hidden ? 'Oculto' : 'Visible'}</span></td>
+        <td>
+          <div class="row-actions">
+            <button onclick="editService('${s.id}')">Editar</button>
+            <button onclick="toggleServiceHidden('${s.id}')">${s.hidden ? 'Mostrar' : 'Ocultar'}</button>
+            <button onclick="deleteService('${s.id}')" style="color:#A94442;">Eliminar</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  document.getElementById('btnNuevoServicio').addEventListener('click', () => {
+    document.getElementById('serviceModalTitle').textContent = 'Agregar servicio';
+    document.getElementById('serviceForm').reset();
+    document.getElementById('sId').value = '';
+    openModal('serviceModal');
+  });
+
+  function editService(id) {
+    const s = adminServices.find(x => x.id === id);
+    document.getElementById('serviceModalTitle').textContent = 'Editar servicio';
+    document.getElementById('sId').value = s.id;
+    document.getElementById('sName').value = s.name;
+    document.getElementById('sCategory').value = s.category;
+    document.getElementById('sImg').value = s.img;
+    document.getElementById('sShortDescription').value = s.shortDescription;
+    document.getElementById('sDescription').value = s.description;
+    document.getElementById('sIncludes').value = (s.includes || []).join('\n');
+    document.getElementById('sHidden').checked = s.hidden;
+    openModal('serviceModal');
+  }
+
+  async function toggleServiceHidden(id) {
+    const s = adminServices.find(x => x.id === id);
+    const { error } = await ladSupabase.from('services').update({ hidden: !s.hidden }).eq('id', id);
+    if (error) { alert('No pudimos actualizar el servicio: ' + error.message); return; }
+    await loadAdminServices();
+  }
+
+  async function deleteService(id) {
+    if (!confirm('¿Eliminar este servicio? Esta acción no se puede deshacer.')) return;
+    const { error } = await ladSupabase.from('services').delete().eq('id', id);
+    if (error) { alert('No pudimos eliminar el servicio: ' + error.message); return; }
+    await loadAdminServices();
+  }
+
+  document.getElementById('serviceForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('sId').value;
+    const data = {
+      name: document.getElementById('sName').value,
+      category: document.getElementById('sCategory').value,
+      image_url: document.getElementById('sImg').value,
+      short_description: document.getElementById('sShortDescription').value,
+      description: document.getElementById('sDescription').value,
+      includes: document.getElementById('sIncludes').value.split('\n').map(v => v.trim()).filter(Boolean),
+      hidden: document.getElementById('sHidden').checked
+    };
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+
+    let error;
+    if (id) {
+      ({ error } = await ladSupabase.from('services').update(data).eq('id', id));
+    } else {
+      const newId = ladSlugify(data.name) + '-' + Date.now().toString(36).slice(-4);
+      ({ error } = await ladSupabase.from('services').insert({ id: newId, ...data }));
+    }
+
+    submitBtn.disabled = false;
+    if (error) { alert('No pudimos guardar el servicio: ' + error.message); return; }
+    closeModal('serviceModal');
+    await loadAdminServices();
+  });
+
+  (async function guardAdmin() {
+    if (!(await ladIsLoggedIn())) {
+      window.location.href = 'login.html?redirect=' + encodeURIComponent('admin.html');
+      return;
+    }
+    const session = await ladGetSession();
+    if (!session || session.role !== 'admin') {
+      alert('No tenés permisos para acceder al panel de administración.');
+      window.location.href = 'usuario.html';
+      return;
+    }
+    loadAdminOrders();
+    loadAdminProducts();
+    loadAdminServices();
+  })();
+</script>
+</body>
+</html>

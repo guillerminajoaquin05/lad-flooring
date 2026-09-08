@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cotizá Tu Proyecto — Lad Flooring</title>
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="cotizacion">
+
+<div id="lad-header"></div>
+
+<section class="section-tight bg-navy text-center section-decorated">
+  <div class="bg-blob" style="width:320px;height:320px;top:-110px;left:12%;background:var(--gold);"></div>
+  <div class="bg-blob" style="width:260px;height:260px;bottom:-120px;right:10%;background:var(--steel-blue);"></div>
+  <div class="container">
+    <span class="eyebrow">Presupuesto sin cargo</span>
+    <h1>Cotizá Tu Proyecto</h1>
+    <p style="max-width:600px;margin:0 auto;">Completá los datos para recibir asesoramiento exclusivo y evaluar tu caso técnico.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="form-card" id="cotizacionCard" style="max-width:820px;">
+
+      <form id="formCotizacion" novalidate>
+        <div class="grid grid-2" style="gap:16px;">
+          <div class="field" id="fNombre">
+            <label for="nombre">Nombre</label>
+            <input type="text" id="nombre" placeholder="Tu nombre" required>
+            <span class="form-error">Ingresá tu nombre.</span>
+          </div>
+          <div class="field" id="fApellido">
+            <label for="apellido">Apellido</label>
+            <input type="text" id="apellido" placeholder="Tu apellido" required>
+            <span class="form-error">Ingresá tu apellido.</span>
+          </div>
+        </div>
+
+        <div class="grid grid-2" style="gap:16px;">
+          <div class="field" id="fEmail">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="tu@email.com" required>
+            <span class="form-error">Ingresá un email válido.</span>
+          </div>
+          <div class="field" id="fTelefono">
+            <label for="telefono">Teléfono</label>
+            <input type="tel" id="telefono" placeholder="Ej: 11 5555-0192" required>
+            <span class="form-error">Ingresá un teléfono de contacto.</span>
+          </div>
+        </div>
+
+        <div class="grid grid-2" style="gap:16px;">
+          <div class="field" id="fLocalidad">
+            <label for="localidad">Localidad</label>
+            <input type="text" id="localidad" placeholder="Ej: San Isidro" required>
+            <span class="form-error">Ingresá tu localidad.</span>
+          </div>
+          <div class="field" id="fProvincia">
+            <label for="provincia">Provincia</label>
+            <input type="text" id="provincia" placeholder="Ej: Buenos Aires" required>
+            <span class="form-error">Ingresá tu provincia.</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="grid grid-2" style="gap:16px;">
+          <div class="field" id="fSuperficie">
+            <label for="superficie">Superficie total (m²)</label>
+            <input type="number" id="superficie" min="1" placeholder="Ej: 85" required>
+            <span class="form-error">Ingresá la superficie aproximada.</span>
+          </div>
+          <div class="field" id="fEtapa">
+            <label for="etapa">Etapa del proyecto</label>
+            <select id="etapa" required>
+              <option value="">Seleccioná una opción</option>
+              <option value="obra-en-curso">Obra en curso</option>
+              <option value="a-refaccionar">A refaccionar</option>
+              <option value="desde-cero">Proyecto desde cero</option>
+            </select>
+            <span class="form-error">Seleccioná la etapa del proyecto.</span>
+          </div>
+        </div>
+
+        <div class="field" id="fModulos">
+          <label>Módulos de interés</label>
+          <div class="pill-options" id="pillOptions">
+            <button type="button" class="pill-option" data-value="Pisos de Madera">Pisos de Madera</button>
+            <button type="button" class="pill-option" data-value="Outdoors / Decks">Outdoors / Decks</button>
+            <button type="button" class="pill-option" data-value="Pisos Deportivos">Pisos Deportivos</button>
+            <button type="button" class="pill-option" data-value="Mantenimiento Bona">Mantenimiento Bona</button>
+          </div>
+          <span class="form-error">Seleccioná al menos un módulo de interés.</span>
+        </div>
+
+        <div class="field">
+          <label for="comentarios">Comentarios adicionales</label>
+          <textarea id="comentarios" rows="4" placeholder="Contanos cualquier detalle extra sobre tu proyecto..."></textarea>
+        </div>
+
+        <div class="field">
+          <label>Planos o fotos (PDF/JPG)</label>
+          <label class="dropzone" id="dropzone" for="fileInput">
+            <div class="dz-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="22" height="22">
+                <path d="M12 16V4M12 4l-4 4M12 4l4 4"/>
+                <path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>
+              </svg>
+            </div>
+            <strong>Arrastrá tus archivos o hacé clic para subir</strong>
+            <p>Planos o fotos, formato PDF/JPG</p>
+          </label>
+          <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" multiple style="display:none;">
+          <div class="dropzone-files" id="dropzoneFiles"></div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:8px;">Enviar proyecto para evaluación</button>
+      </form>
+
+      <div id="cotizacionSuccess" style="display:none;text-align:center;padding:20px 0;">
+        <div style="font-size:2.6rem;margin-bottom:12px;">✓</div>
+        <h2>¡Listo, recibimos tu proyecto!</h2>
+        <p style="max-width:480px;margin:0 auto 20px;">Nuestro equipo técnico va a evaluar tu caso y te contactaremos en los próximos días para coordinar los próximos pasos.</p>
+        <a href="index.html" class="btn btn-outline" style="color:var(--navy);border-color:var(--navy);">Volver al inicio</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div id="lad-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/products.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/common.js"></script>
+<script>
+  // Pills de módulos de interés
+  const selectedModulos = new Set();
+  document.querySelectorAll('.pill-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const value = btn.dataset.value;
+      if (selectedModulos.has(value)) {
+        selectedModulos.delete(value);
+        btn.classList.remove('selected');
+      } else {
+        selectedModulos.add(value);
+        btn.classList.add('selected');
+      }
+      if (selectedModulos.size > 0) document.getElementById('fModulos').classList.remove('has-error');
+    });
+  });
+
+  // Preselección de módulo según de dónde venga el usuario (ej: servicio puntual)
+  const preselectModulo = new URLSearchParams(window.location.search).get('modulo');
+  if (preselectModulo) {
+    const match = [...document.querySelectorAll('.pill-option')].find(btn => btn.dataset.value === preselectModulo);
+    if (match) match.click();
+  }
+
+  // Zona de archivos (drag & drop + selección manual)
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const filesList = document.getElementById('dropzoneFiles');
+  let selectedFiles = [];
+
+  function renderFiles() {
+    filesList.innerHTML = selectedFiles.map((f, i) => `
+      <div class="dz-file">
+        <span>📎 ${f.name}</span>
+        <button type="button" onclick="ladRemoveFile(${i})">✕</button>
+      </div>
+    `).join('');
+  }
+  window.ladRemoveFile = function (i) {
+    selectedFiles.splice(i, 1);
+    renderFiles();
+  };
+  function addFiles(fileArray) {
+    selectedFiles = selectedFiles.concat(Array.from(fileArray));
+    renderFiles();
+  }
+  fileInput.addEventListener('change', () => addFiles(fileInput.files));
+  ['dragenter', 'dragover'].forEach(evt => {
+    dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+  });
+  ['dragleave', 'drop'].forEach(evt => {
+    dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+  });
+  dropzone.addEventListener('drop', (e) => {
+    if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+  });
+
+  // Validación y envío
+  document.getElementById('formCotizacion').addEventListener('submit', function (e) {
+    e.preventDefault();
+    let valid = true;
+
+    const textFields = [
+      { id: 'fNombre', el: 'nombre', test: v => v.trim().length > 0 },
+      { id: 'fApellido', el: 'apellido', test: v => v.trim().length > 0 },
+      { id: 'fEmail', el: 'email', test: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) },
+      { id: 'fTelefono', el: 'telefono', test: v => v.trim().length >= 6 },
+      { id: 'fLocalidad', el: 'localidad', test: v => v.trim().length > 0 },
+      { id: 'fProvincia', el: 'provincia', test: v => v.trim().length > 0 },
+      { id: 'fSuperficie', el: 'superficie', test: v => v && Number(v) > 0 },
+      { id: 'fEtapa', el: 'etapa', test: v => v !== '' }
+    ];
+    textFields.forEach(f => {
+      const input = document.getElementById(f.el);
+      const wrap = document.getElementById(f.id);
+      if (!f.test(input.value)) { wrap.classList.add('has-error'); valid = false; }
+      else wrap.classList.remove('has-error');
+    });
+
+    const modulosWrap = document.getElementById('fModulos');
+    if (selectedModulos.size === 0) { modulosWrap.classList.add('has-error'); valid = false; }
+    else modulosWrap.classList.remove('has-error');
+
+    if (!valid) return;
+
+    this.style.display = 'none';
+    document.getElementById('cotizacionSuccess').style.display = 'block';
+  });
+</script>
+</body>
+</html>

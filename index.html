@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lad Flooring — Especialistas en Pisos de Madera</title>
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="home">
+
+<div id="lad-header"></div>
+
+<div class="hero-wrap">
+<section class="hero" id="hero">
+  <div class="hero-slide ph ph-1 active">
+    <span class="ph-tag">Foto: piso de madera recién colocado</span>
+    <div class="hero-content">
+      <span class="eyebrow">Colocación &amp; Restauración</span>
+      <h1>Especialistas en Pisos de Madera</h1>
+      <p>Pulido, hidrolaqueado y colocación a medida, con más de 20 años de trayectoria en Buenos Aires.</p>
+      <a href="servicios.html" class="btn btn-primary">Ver Servicios</a>
+    </div>
+  </div>
+  <div class="hero-slide ph ph-3">
+    <span class="ph-tag">Foto: productos de limpieza Bona</span>
+    <div class="hero-content">
+      <span class="eyebrow">Tienda Online</span>
+      <h1>Cuidá tus pisos como un profesional</h1>
+      <p>Productos originales de la línea Bona para la limpieza y el mantenimiento diario de tu piso.</p>
+      <a href="tienda.html?linea=bona" class="btn btn-primary">Comprar línea Bona</a>
+    </div>
+  </div>
+  <div class="hero-slide ph ph-5">
+    <span class="ph-tag">Foto: deck exterior / cancha deportiva</span>
+    <div class="hero-content">
+      <span class="eyebrow">Outdoor &amp; Deportivo</span>
+      <h1>Soluciones para exteriores y alto rendimiento</h1>
+      <p>Decks, pérgolas y pisos deportivos pensados para resistir el uso intensivo y la intemperie.</p>
+      <a href="servicios.html#outdoor" class="btn btn-primary">Saber más</a>
+    </div>
+  </div>
+  <button class="hero-arrow prev" onclick="ladHeroMove(-1)" aria-label="Anterior">‹</button>
+  <button class="hero-arrow next" onclick="ladHeroMove(1)" aria-label="Siguiente">›</button>
+  <div class="hero-dots" id="heroDots"></div>
+</section>
+  <div class="floating-badge glass hero-stat">
+    <strong>+20 años</strong>
+    <span>de experiencia en pisos de madera</span>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <span class="eyebrow">Explorá por categoría</span>
+      <h2>Nuestros servicios</h2>
+      <p>Tres grandes mundos para encontrar rápido la solución que necesitás.</p>
+    </div>
+    <div class="grid grid-3">
+      <a class="category-card ph ph-1" href="servicios.html#madera">
+        <div class="cc-body">
+          <h3>Pisos de Madera</h3>
+          <span>Colocación, pulido e hidrolaqueado →</span>
+        </div>
+      </a>
+      <a class="category-card ph ph-2" href="servicios.html#outdoor">
+        <div class="cc-body">
+          <h3>Outdoors</h3>
+          <span>Decks y espacios exteriores →</span>
+        </div>
+      </a>
+      <a class="category-card ph ph-5" href="servicios.html#deportivos">
+        <div class="cc-body">
+          <h3>Pisos Deportivos</h3>
+          <span>Gimnasios y canchas →</span>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+
+<section class="section bg-navy">
+  <div class="container">
+    <div class="flex-between" style="margin-bottom:var(--space-4); flex-wrap:wrap; gap:16px;">
+      <div>
+        <span class="eyebrow">Tienda online</span>
+        <h2 class="mt-0">Productos Destacados</h2>
+      </div>
+      <a href="tienda.html" class="btn btn-primary">Ver toda la tienda</a>
+    </div>
+    <div class="grid grid-4" id="homeProducts"></div>
+  </div>
+</section>
+
+<section class="section bg-cream">
+  <div class="container grid grid-2" style="align-items:center;">
+    <div class="media-stack">
+      <div class="ph ph-1" style="height:380px;border-radius:var(--radius-lg);">
+        <span class="ph-tag" style="bottom:auto;top:16px;">Foto: equipo Lad Flooring en obra</span>
+      </div>
+      <div class="floating-badge glass-dark" style="left:-28px;bottom:-24px;">
+        <strong>+1200</strong>
+        <span>proyectos entregados</span>
+      </div>
+    </div>
+    <div>
+      <span class="eyebrow">Quiénes somos</span>
+      <h2>Somos Lad Flooring</h2>
+      <p>Somos especialistas en pisos de madera, con más de 20 años de experiencia en renovación, reparación y mantenimiento.</p>
+      <p>Buscamos resultados duraderos y bien terminados para que puedas disfrutar tus espacios en su mejor versión.
+      </p>
+      <a href="nosotros.html" class="btn btn-primary">Conocer más</a>
+    </div>
+  </div>
+</section>
+
+<div id="lad-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/products.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/common.js"></script>
+<script>
+  // Carrusel del hero
+  let ladHeroIndex = 0;
+  const ladSlides = document.querySelectorAll('.hero-slide');
+  const ladDotsWrap = document.getElementById('heroDots');
+  ladSlides.forEach((_, i) => {
+    const dot = document.createElement('button');
+    if (i === 0) dot.classList.add('active');
+    dot.addEventListener('click', () => ladHeroGoTo(i));
+    ladDotsWrap.appendChild(dot);
+  });
+  function ladHeroGoTo(i) {
+    ladSlides[ladHeroIndex].classList.remove('active');
+    ladDotsWrap.children[ladHeroIndex].classList.remove('active');
+    ladHeroIndex = (i + ladSlides.length) % ladSlides.length;
+    ladSlides[ladHeroIndex].classList.add('active');
+    ladDotsWrap.children[ladHeroIndex].classList.add('active');
+  }
+  function ladHeroMove(dir) { ladHeroGoTo(ladHeroIndex + dir); }
+  setInterval(() => ladHeroMove(1), 6000);
+
+  // Productos destacados
+  document.addEventListener('DOMContentLoaded', async () => {
+    const wrap = document.getElementById('homeProducts');
+    const products = await ladGetProducts();
+    products.slice(0, 4).forEach(p => {
+      wrap.innerHTML += `
+        <div class="card">
+          <a href="producto.html?id=${p.id}"><div class="card-img ph ${p.img}"></div></a>
+          <div class="card-body">
+            <span class="badge badge-outline">${p.category}</span>
+            <h3 style="margin-top:8px;"><a href="producto.html?id=${p.id}">${p.name}</a></h3>
+          </div>
+          <div class="card-footer">
+            <span class="price">${ladFormatPrice(p.price)}</span>
+            <button class="btn btn-primary btn-sm" onclick="ladAddToCart('${p.id}')">Agregar</button>
+          </div>
+        </div>`;
+    });
+  });
+</script>
+</body>
+</html>

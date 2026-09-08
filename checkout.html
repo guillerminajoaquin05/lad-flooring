@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finalizar Compra — Lad Flooring</title>
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .order-summary-table { width: 100%; border-collapse: collapse; margin-bottom: var(--space-3); }
+  .order-summary-table td { padding: 12px 6px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .order-summary-table .os-product { display: flex; align-items: center; gap: 12px; }
+  .order-summary-table .os-product .ph { width: 50px; height: 50px; border-radius: var(--radius-sm); flex-shrink: 0; }
+  .radio-card { display:flex; align-items:center; gap:10px; border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; margin-bottom:10px; cursor:pointer; transition: box-shadow 0.2s ease; }
+  .radio-card.selected { border-color:var(--gold); background:#FBF3E7; box-shadow: var(--shadow-card); }
+  .pay-note { background:#FBF3E7; border:1px solid var(--gold); border-radius:var(--radius); padding:12px 14px; font-size:0.85rem; margin-top:10px; display:none; }
+</style>
+</head>
+<body data-page="carrito">
+
+<div id="lad-header"></div>
+
+<section class="section-tight">
+  <div class="container" style="max-width:900px;">
+    <div id="stepperMount"></div>
+
+    <!-- Paso 2: Información -->
+    <div id="stepInfo">
+      <div class="form-card" style="max-width:none;">
+        <h2 style="margin-top:0;">Información de envío</h2>
+        <form id="formInfo" novalidate>
+          <div class="grid grid-2" style="gap:16px;">
+            <div class="field" id="fNombreInfo">
+              <label>Nombre</label><input type="text" id="nombreInfo" required>
+              <span class="form-error">Ingresá tu nombre.</span>
+            </div>
+            <div class="field" id="fApellidoInfo">
+              <label>Apellido</label><input type="text" id="apellidoInfo" required>
+              <span class="form-error">Ingresá tu apellido.</span>
+            </div>
+          </div>
+          <div class="grid grid-2" style="gap:16px;">
+            <div class="field" id="fEmailInfo">
+              <label>Email</label><input type="email" id="emailInfo" required>
+              <span class="form-error">Ingresá un email válido.</span>
+            </div>
+            <div class="field" id="fTelefonoInfo">
+              <label>Teléfono</label><input type="tel" id="telefonoInfo" required>
+              <span class="form-error">Ingresá un teléfono de contacto.</span>
+            </div>
+          </div>
+          <div class="field" id="fDireccionInfo">
+            <label>Dirección</label><input type="text" id="direccionInfo" placeholder="Calle y número" required>
+            <span class="form-error">Ingresá tu dirección.</span>
+          </div>
+          <div class="field">
+            <label>Depto / Piso (opcional)</label><input type="text" id="deptoInfo">
+          </div>
+          <div class="grid grid-2" style="gap:16px;">
+            <div class="field" id="fLocalidadInfo">
+              <label>Localidad</label><input type="text" id="localidadInfo" required>
+              <span class="form-error">Ingresá tu localidad.</span>
+            </div>
+            <div class="field" id="fProvinciaInfo">
+              <label>Provincia</label>
+              <select id="provinciaInfo">
+                <option value="caba">Ciudad Autónoma de Buenos Aires</option>
+                <option value="gba">Buenos Aires</option>
+                <option value="cercano">Córdoba</option>
+                <option value="cercano">Entre Ríos</option>
+                <option value="cercano">La Pampa</option>
+                <option value="cercano">Mendoza</option>
+                <option value="cercano">San Juan</option>
+                <option value="cercano">San Luis</option>
+                <option value="cercano">Santa Fe</option>
+                <option value="lejano">Catamarca</option>
+                <option value="lejano">Chaco</option>
+                <option value="lejano">Chubut</option>
+                <option value="lejano">Corrientes</option>
+                <option value="lejano">Formosa</option>
+                <option value="lejano">Jujuy</option>
+                <option value="lejano">La Rioja</option>
+                <option value="lejano">Misiones</option>
+                <option value="lejano">Neuquén</option>
+                <option value="lejano">Río Negro</option>
+                <option value="lejano">Salta</option>
+                <option value="lejano">Santa Cruz</option>
+                <option value="lejano">Santiago del Estero</option>
+                <option value="lejano">Tierra del Fuego</option>
+                <option value="lejano">Tucumán</option>
+              </select>
+            </div>
+          </div>
+          <div class="field" id="fCpInfo" style="max-width:220px;">
+            <label>Código Postal</label><input type="text" id="cpInfo" required>
+            <span class="form-error">Ingresá tu código postal.</span>
+          </div>
+
+          <div class="checkbox-row" style="margin:20px 0;">
+            <input type="checkbox" id="otraDireccionCheck">
+            <label for="otraDireccionCheck" style="margin:0;">¿Enviar a otra dirección?</label>
+          </div>
+          <div id="otraDireccionBlock" style="display:none;">
+            <div class="field"><label>Dirección de envío</label><input type="text" id="direccionEnvio" placeholder="Calle y número"></div>
+          </div>
+
+          <div class="field">
+            <label>Notas del pedido (opcional)</label>
+            <textarea id="notasPedido" rows="3" placeholder="Notas sobre tu pedido, por ejemplo, indicaciones para la entrega."></textarea>
+          </div>
+
+          <div class="flex-between" style="margin-top:24px;">
+            <a href="carrito.html" class="btn btn-outline" style="color:var(--navy);border-color:var(--navy);">← Volver al carrito</a>
+            <button type="submit" class="btn btn-primary">Siguiente →</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Paso 3: Pago -->
+    <div id="stepPago" style="display:none;">
+      <div class="form-card" style="max-width:none;">
+        <h2 style="margin-top:0;">Tu Pedido</h2>
+        <table class="order-summary-table" id="orderSummaryTable"></table>
+
+        <div class="cart-coupon" style="margin-bottom:16px;">
+          <input type="text" id="discountCodePago" placeholder="Ingresar cupón">
+          <button type="button" class="btn btn-outline" style="color:var(--navy);border-color:var(--navy);" id="applyDiscountPago">Aplicar</button>
+        </div>
+        <span id="discountMsgPago" style="font-size:0.82rem;"></span>
+
+        <div class="divider"></div>
+        <div class="summary-row" style="display:flex;justify-content:space-between;padding:6px 0;"><span>Subtotal</span><span id="pagoSubtotal">$0</span></div>
+        <div class="summary-row" id="pagoDiscountRow" style="display:none;justify-content:space-between;padding:6px 0;color:#3d8a5c;"><span>Descuento</span><span id="pagoDiscount">-$0</span></div>
+        <div class="summary-row" style="display:flex;justify-content:space-between;padding:6px 0;"><span id="pagoShippingLabel">Envío</span><span id="pagoShippingValue">$0</span></div>
+        <div class="summary-row" style="display:flex;justify-content:space-between;padding:10px 0;font-weight:bold;font-size:1.15rem;color:var(--navy);border-top:1px solid var(--border);margin-top:6px;"><span>Total</span><span id="pagoTotal">$0</span></div>
+
+        <div class="field" style="margin-top:24px;">
+          <label>Método de pago</label>
+          <label class="radio-card selected" data-pay="mp"><input type="radio" name="pay" value="mp" checked> Mercado Pago</label>
+          <label class="radio-card" data-pay="transferencia"><input type="radio" name="pay" value="transferencia"> Transferencia bancaria</label>
+          <div class="pay-note" id="transferNote">
+            Al elegir transferencia, tu compra queda <strong>pendiente de aprobación</strong> hasta que el equipo de Lad Flooring confirme la acreditación del pago y habilite manualmente el producto. Te vamos a avisar por email apenas esté confirmado.
+          </div>
+        </div>
+
+        <div class="flex-between" style="margin-top:24px;">
+          <button type="button" class="btn btn-outline" style="color:var(--navy);border-color:var(--navy);" id="btnVolverInfo">← Anterior</button>
+          <button type="button" class="btn btn-primary btn-lg" id="btnRealizarPedido">Realizar pedido</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paso 4: Confirmación -->
+    <div id="stepConfirm" style="display:none;text-align:center;">
+      <div class="form-card" style="text-align:center;">
+        <div style="font-size:2.6rem;margin-bottom:12px;">✓</div>
+        <h2>¡Gracias por tu compra!</h2>
+        <p id="confirmOrderNumber" style="color:var(--navy);font-weight:600;"></p>
+        <p id="confirmPayNote" style="max-width:480px;margin:0 auto 20px;"></p>
+        <div class="flex" style="justify-content:center;gap:16px;flex-wrap:wrap;">
+          <a href="usuario.html" class="btn btn-primary">Ver mis compras</a>
+          <a href="index.html" class="btn btn-outline" style="color:var(--navy);border-color:var(--navy);">Volver al inicio</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div id="lad-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/products.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/common.js"></script>
+<script>
+  const shippingRates = {
+    caba: { label: 'Envío CABA', price: 4500 },
+    gba: { label: 'Envío GBA', price: 6800 },
+    cercano: { label: 'Envío Interior (zona cercana)', price: 8900 },
+    lejano: { label: 'Envío Interior (zona lejana)', price: 13500 }
+  };
+  let discountPct = 0;
+  let currentStep = 2;
+
+  function renderStepper() {
+    document.getElementById('stepperMount').innerHTML = ladCheckoutStepperHTML(currentStep);
+  }
+
+  function goToStep(step) {
+    currentStep = step;
+    document.getElementById('stepInfo').style.display = step === 2 ? 'block' : 'none';
+    document.getElementById('stepPago').style.display = step === 3 ? 'block' : 'none';
+    document.getElementById('stepConfirm').style.display = step === 4 ? 'block' : 'none';
+    renderStepper();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  document.getElementById('otraDireccionCheck').addEventListener('change', (e) => {
+    document.getElementById('otraDireccionBlock').style.display = e.target.checked ? 'block' : 'none';
+  });
+
+  document.getElementById('formInfo').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    let valid = true;
+    const fields = [
+      { id: 'fNombreInfo', el: 'nombreInfo', test: v => v.trim().length > 0 },
+      { id: 'fApellidoInfo', el: 'apellidoInfo', test: v => v.trim().length > 0 },
+      { id: 'fEmailInfo', el: 'emailInfo', test: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) },
+      { id: 'fTelefonoInfo', el: 'telefonoInfo', test: v => v.trim().length >= 6 },
+      { id: 'fDireccionInfo', el: 'direccionInfo', test: v => v.trim().length > 0 },
+      { id: 'fLocalidadInfo', el: 'localidadInfo', test: v => v.trim().length > 0 },
+      { id: 'fCpInfo', el: 'cpInfo', test: v => v.trim().length > 0 }
+    ];
+    fields.forEach(f => {
+      const input = document.getElementById(f.el);
+      const wrap = document.getElementById(f.id);
+      if (!f.test(input.value)) { wrap.classList.add('has-error'); valid = false; }
+      else wrap.classList.remove('has-error');
+    });
+    if (!valid) return;
+    await renderOrderSummary();
+    goToStep(3);
+  });
+
+  document.getElementById('btnVolverInfo').addEventListener('click', () => goToStep(2));
+
+  async function renderOrderSummary() {
+    const cart = ladGetCart();
+    const products = await Promise.all(cart.map(item => ladGetProductById(item.id)));
+    document.getElementById('orderSummaryTable').innerHTML = cart.map((item, idx) => {
+      const p = products[idx];
+      return `
+        <tr>
+          <td>
+            <div class="os-product">
+              <div class="ph ${p.img}"></div>
+              <span>${p.name}</span>
+            </div>
+          </td>
+          <td style="text-align:center;">x${item.qty}</td>
+          <td style="text-align:right;font-weight:600;">${ladFormatPrice(p.price * item.qty)}</td>
+        </tr>`;
+    }).join('');
+    await updatePagoTotals();
+  }
+
+  async function updatePagoTotals() {
+    const subtotal = await ladCartTotal();
+    const discount = subtotal * discountPct;
+    const provincia = document.getElementById('provinciaInfo').value;
+    const zona = shippingRates[provincia];
+    const total = subtotal - discount + zona.price;
+
+    document.getElementById('pagoSubtotal').textContent = ladFormatPrice(subtotal);
+    document.getElementById('pagoShippingLabel').textContent = zona.label;
+    document.getElementById('pagoShippingValue').textContent = ladFormatPrice(zona.price);
+    document.getElementById('pagoTotal').textContent = ladFormatPrice(total);
+
+    const discountRow = document.getElementById('pagoDiscountRow');
+    if (discountPct > 0) {
+      discountRow.style.display = 'flex';
+      document.getElementById('pagoDiscount').textContent = '-' + ladFormatPrice(discount);
+    } else {
+      discountRow.style.display = 'none';
+    }
+  }
+
+  document.getElementById('applyDiscountPago').addEventListener('click', () => {
+    const code = document.getElementById('discountCodePago').value.trim().toUpperCase();
+    const msg = document.getElementById('discountMsgPago');
+    if (code === 'LAD10') {
+      discountPct = 0.10;
+      msg.style.color = '#3d8a5c';
+      msg.textContent = '¡Código aplicado! 10% de descuento.';
+    } else if (code === '') {
+      msg.textContent = '';
+      discountPct = 0;
+    } else {
+      discountPct = 0;
+      msg.style.color = '#A94442';
+      msg.textContent = 'Código inválido o vencido.';
+    }
+    updatePagoTotals();
+  });
+
+  document.querySelectorAll('input[name="pay"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.querySelectorAll('.radio-card[data-pay]').forEach(l => l.classList.remove('selected'));
+      radio.closest('.radio-card').classList.add('selected');
+      document.getElementById('transferNote').style.display = radio.value === 'transferencia' ? 'block' : 'none';
+    });
+  });
+
+  function getShippingInfo() {
+    const provincia = document.getElementById('provinciaInfo').value;
+    return {
+      nombre: document.getElementById('nombreInfo').value,
+      apellido: document.getElementById('apellidoInfo').value,
+      email: document.getElementById('emailInfo').value,
+      telefono: document.getElementById('telefonoInfo').value,
+      direccion: document.getElementById('direccionInfo').value,
+      depto: document.getElementById('deptoInfo').value,
+      localidad: document.getElementById('localidadInfo').value,
+      provincia: provincia,
+      codigoPostal: document.getElementById('cpInfo').value,
+      notas: document.getElementById('notasPedido').value,
+      shippingZone: shippingRates[provincia].label
+    };
+  }
+
+  document.getElementById('btnRealizarPedido').addEventListener('click', async () => {
+    const payMethod = document.querySelector('input[name="pay"]:checked').value;
+    const cart = ladGetCart();
+    const cartProducts = await Promise.all(cart.map(item => ladGetProductById(item.id)));
+    const items = cart.map((item, idx) => {
+      const p = cartProducts[idx];
+      return { id: p.id, name: p.name, price: p.price, qty: item.qty };
+    });
+    const provincia = document.getElementById('provinciaInfo').value;
+    const shippingCost = shippingRates[provincia].price;
+    const shippingInfo = getShippingInfo();
+    const couponCode = document.getElementById('discountCodePago').value || null;
+
+    const btn = document.getElementById('btnRealizarPedido');
+    btn.disabled = true;
+
+    if (payMethod === 'mp') {
+      btn.textContent = 'Redirigiendo a Mercado Pago...';
+      const { data, error } = await ladSupabase.functions.invoke('create-mp-preference', {
+        body: { items, shippingInfo, shippingCost, discountPct, couponCode }
+      });
+      if (error || !data || data.error) {
+        btn.disabled = false;
+        btn.textContent = 'Realizar pedido';
+        alert('No pudimos iniciar el pago: ' + (data && data.error ? data.error : (error ? error.message : 'Error desconocido')));
+        return;
+      }
+      window.location.href = data.init_point;
+      return;
+    }
+
+    // Transferencia bancaria: el pedido se crea directo, sin pasar por Mercado Pago
+    btn.textContent = 'Guardando pedido...';
+    const subtotal = await ladCartTotal();
+    const discount = subtotal * discountPct;
+    const total = subtotal - discount + shippingCost;
+    const session = await ladGetSession();
+
+    const { data: order, error: orderError } = await ladSupabase.from('orders').insert({
+      user_id: session.id,
+      nombre: shippingInfo.nombre,
+      apellido: shippingInfo.apellido,
+      email: shippingInfo.email,
+      telefono: shippingInfo.telefono,
+      direccion: shippingInfo.direccion,
+      depto: shippingInfo.depto || null,
+      localidad: shippingInfo.localidad,
+      provincia: shippingInfo.provincia,
+      codigo_postal: shippingInfo.codigoPostal,
+      notas: shippingInfo.notas || null,
+      shipping_zone: shippingInfo.shippingZone,
+      shipping_cost: shippingCost,
+      coupon_code: couponCode,
+      subtotal, discount, total,
+      payment_method: 'transferencia',
+      payment_status: 'pendiente',
+      order_status: 'preparando'
+    }).select().single();
+
+    if (orderError) {
+      btn.disabled = false;
+      btn.textContent = 'Realizar pedido';
+      alert('No pudimos registrar tu pedido: ' + orderError.message);
+      return;
+    }
+
+    const orderItems = items.map(i => ({ order_id: order.id, product_id: i.id, qty: i.qty, unit_price: i.price }));
+    await ladSupabase.from('order_items').insert(orderItems);
+
+    document.getElementById('confirmOrderNumber').textContent = 'Pedido #' + order.id;
+    document.getElementById('confirmPayNote').textContent = 'Tu pedido quedó registrado y pendiente de aprobación. Apenas confirmemos la acreditación de tu transferencia, te avisamos por email y habilitamos el pedido.';
+    localStorage.removeItem('lad_cart');
+    ladUpdateCartBadge();
+    goToStep(4);
+  });
+
+  document.getElementById('provinciaInfo').addEventListener('change', updatePagoTotals);
+
+  renderStepper();
+
+  (async function initCheckout() {
+    if (!(await ladIsLoggedIn())) {
+      window.location.href = 'login.html?redirect=' + encodeURIComponent('checkout.html');
+      return;
+    }
+
+    // ¿Estamos volviendo de Mercado Pago?
+    const urlParams = new URLSearchParams(window.location.search);
+    const mpStatus = urlParams.get('status');
+    const mpOrderId = urlParams.get('order_id');
+    if (mpStatus && mpOrderId) {
+      document.getElementById('confirmOrderNumber').textContent = 'Pedido #' + mpOrderId;
+      if (mpStatus === 'success') {
+        document.getElementById('confirmPayNote').textContent = 'Te enviamos la confirmación por email. En breve vas a poder ver el estado de tu pedido en Mi Cuenta.';
+        localStorage.removeItem('lad_cart');
+        ladUpdateCartBadge();
+      } else if (mpStatus === 'pending') {
+        document.getElementById('confirmPayNote').textContent = 'Tu pago está siendo procesado. Te vamos a avisar por email apenas se confirme.';
+        localStorage.removeItem('lad_cart');
+        ladUpdateCartBadge();
+      } else {
+        document.getElementById('confirmPayNote').textContent = 'No pudimos procesar tu pago. Podés volver al carrito e intentar de nuevo.';
+      }
+      goToStep(4);
+      return;
+    }
+
+    if (ladGetCart().length === 0) {
+      window.location.href = 'carrito.html';
+      return;
+    }
+    const session = await ladGetSession();
+    if (session && session.email) document.getElementById('emailInfo').value = session.email;
+    if (session && session.nombre) document.getElementById('nombreInfo').value = session.nombre;
+    if (session && session.apellido) document.getElementById('apellidoInfo').value = session.apellido;
+    if (session && session.telefono) document.getElementById('telefonoInfo').value = session.telefono;
+  })();
+</script>
+</body>
+</html>

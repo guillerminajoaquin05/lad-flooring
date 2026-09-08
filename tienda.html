@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tienda Online — Lad Flooring</title>
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="tienda">
+
+<div id="lad-header"></div>
+
+<section class="section-tight bg-cream text-center section-decorated">
+  <div class="bg-blob" style="width:320px;height:320px;top:-110px;left:12%;background:var(--gold);opacity:0.5;"></div>
+  <div class="bg-blob" style="width:260px;height:260px;bottom:-120px;right:10%;background:var(--steel-blue);opacity:0.45;"></div>
+  <div class="container">
+    <span class="eyebrow">Tienda online</span>
+    <h1>Productos Destacados</h1>
+    <p style="max-width:600px;margin:0 auto;">Mantenimiento profesional y soluciones DIY para que tu piso se vea impecable todo el año.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="tag-filters" id="tagFilters">
+      <button data-line="todos" class="active">Todos</button>
+      <button data-line="bona">Línea Bona</button>
+      <button data-line="flotantes">Pisos Flotantes</button>
+    </div>
+    <div class="grid grid-4" id="productGrid"></div>
+  </div>
+</section>
+
+<div id="lad-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/products.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/common.js"></script>
+<script>
+  async function renderProducts(line) {
+    const grid = document.getElementById('productGrid');
+    grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#8199a3;">Cargando productos...</p>';
+    const products = await ladGetProducts({ line });
+    if (products.length === 0) {
+      grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#8199a3;">No hay productos en esta categoría por el momento.</p>';
+      return;
+    }
+    grid.innerHTML = products.map(p => `
+      <div class="card">
+        <a href="producto.html?id=${p.id}"><div class="card-img ph ${p.img}"></div></a>
+        <div class="card-body">
+          <span class="badge badge-outline">${p.category}</span>
+          <h3 style="margin-top:8px;"><a href="producto.html?id=${p.id}">${p.name}</a></h3>
+        </div>
+        <div class="card-footer">
+          <span>
+            ${p.oldPrice ? `<span class="price-old">${ladFormatPrice(p.oldPrice)}</span>` : ''}
+            <span class="price">${ladFormatPrice(p.price)}</span>
+          </span>
+          <button class="btn btn-primary btn-sm" onclick="ladAddToCart('${p.id}'); this.textContent='Agregado ✓'; setTimeout(()=>this.textContent='Agregar',1200);">Agregar</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  document.querySelectorAll('#tagFilters button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#tagFilters button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderProducts(btn.dataset.line);
+    });
+  });
+
+  const params = new URLSearchParams(window.location.search);
+  const initialLine = params.get('linea') || 'todos';
+  document.querySelectorAll('#tagFilters button').forEach(b => {
+    b.classList.toggle('active', b.dataset.line === initialLine);
+  });
+  renderProducts(initialLine);
+</script>
+</body>
+</html>

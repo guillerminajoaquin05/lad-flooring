@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carrito — Lad Flooring</title>
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .cart-product-cell { display: flex; align-items: center; gap: 14px; }
+  .cart-product-cell .ph { width: 64px; height: 64px; border-radius: var(--radius-sm); flex-shrink: 0; }
+  .cart-product-cell a { color: var(--navy); }
+</style>
+</head>
+<body data-page="carrito">
+
+<div id="lad-header"></div>
+
+<section class="section-tight">
+  <div class="container">
+    <h1>Tu Carrito</h1>
+
+    <div id="cartHasItems">
+      <div style="overflow-x:auto;">
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Producto</th>
+              <th>Precio</th>
+              <th>Cantidad</th>
+              <th>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody id="cartItemsBody"></tbody>
+        </table>
+      </div>
+
+      <div class="cart-actions-row">
+        <div class="cart-coupon">
+          <input type="text" id="discountCode" placeholder="Ingresar cupón promocional">
+          <button class="btn btn-outline" style="color:var(--navy);border-color:var(--navy);" id="applyDiscount">Aplicar</button>
+        </div>
+        <a href="cotizacion.html" class="btn btn-navy" id="finalizarPedidoBtn">Finalizar pedido →</a>
+      </div>
+      <span id="discountMsg" style="font-size:0.82rem;"></span>
+
+      <div class="grid grid-2" style="gap:32px;align-items:start;margin-top:var(--space-4);">
+        <div class="calc-envio">
+          <h3 style="margin-top:0;">Calcular Envío</h3>
+          <div class="field">
+            <label>Provincia</label>
+            <select id="provinciaSelect">
+              <option value="caba">Ciudad Autónoma de Buenos Aires</option>
+              <option value="gba">Buenos Aires</option>
+              <option value="cercano">Córdoba</option>
+              <option value="cercano">Entre Ríos</option>
+              <option value="cercano">La Pampa</option>
+              <option value="cercano">Mendoza</option>
+              <option value="cercano">San Juan</option>
+              <option value="cercano">San Luis</option>
+              <option value="cercano">Santa Fe</option>
+              <option value="lejano">Catamarca</option>
+              <option value="lejano">Chaco</option>
+              <option value="lejano">Chubut</option>
+              <option value="lejano">Corrientes</option>
+              <option value="lejano">Formosa</option>
+              <option value="lejano">Jujuy</option>
+              <option value="lejano">La Rioja</option>
+              <option value="lejano">Misiones</option>
+              <option value="lejano">Neuquén</option>
+              <option value="lejano">Río Negro</option>
+              <option value="lejano">Salta</option>
+              <option value="lejano">Santa Cruz</option>
+              <option value="lejano">Santiago del Estero</option>
+              <option value="lejano">Tierra del Fuego</option>
+              <option value="lejano">Tucumán</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Código Postal</label>
+            <input type="text" id="postcode" placeholder="Ej: 1642">
+          </div>
+          <button class="btn btn-navy" id="btnActualizarTotales">Actualizar Totales</button>
+        </div>
+
+        <div class="totales-carrito">
+          <h3 style="margin-top:0;">Totales del carrito</h3>
+          <table class="totales-table">
+            <tr>
+              <td class="t-label">Subtotal</td>
+              <td class="t-value" id="sumSubtotal">$0</td>
+            </tr>
+            <tr id="sumDiscountRow" style="display:none;">
+              <td class="t-label">Descuento</td>
+              <td class="t-value" id="sumDiscount" style="color:#3d8a5c;">-$0</td>
+            </tr>
+            <tr>
+              <td class="t-label">Envío</td>
+              <td class="t-value">
+                <label class="shipping-radio"><input type="radio" name="shipping" value="retiro" checked> Retiro por sucursal — Gratis</label>
+                <label class="shipping-radio"><input type="radio" name="shipping" value="zona"> <span id="zonaShippingLabel">Envío CABA</span> — <span id="zonaShippingPrice">$4.500</span></label>
+              </td>
+            </tr>
+            <tr class="t-total">
+              <td class="t-label">Total</td>
+              <td class="t-value" id="sumTotal">$0</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="cartEmpty" style="display:none;text-align:center;padding:60px 0;">
+      <p>Tu carrito está vacío.</p>
+      <a href="tienda.html" class="btn btn-primary">Ir a la tienda</a>
+    </div>
+  </div>
+</section>
+
+<div id="lad-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/products.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/common.js"></script>
+<script>
+  let discountPct = 0;
+  const shippingRates = {
+    caba: { label: 'Envío CABA', price: 4500 },
+    gba: { label: 'Envío GBA', price: 6800 },
+    cercano: { label: 'Envío Interior (zona cercana)', price: 8900 },
+    lejano: { label: 'Envío Interior (zona lejana)', price: 13500 }
+  };
+
+  function updateZonaLabel() {
+    const zona = shippingRates[document.getElementById('provinciaSelect').value];
+    document.getElementById('zonaShippingLabel').textContent = zona.label;
+    document.getElementById('zonaShippingPrice').textContent = ladFormatPrice(zona.price);
+  }
+
+  function getShippingCost() {
+    const method = document.querySelector('input[name="shipping"]:checked').value;
+    if (method === 'retiro') return 0;
+    return shippingRates[document.getElementById('provinciaSelect').value].price;
+  }
+
+  async function renderCart() {
+    const cart = ladGetCart();
+    const hasItems = document.getElementById('cartHasItems');
+    const empty = document.getElementById('cartEmpty');
+    if (cart.length === 0) {
+      hasItems.style.display = 'none';
+      empty.style.display = 'block';
+      return;
+    }
+    hasItems.style.display = 'block';
+    empty.style.display = 'none';
+
+    const products = await Promise.all(cart.map(item => ladGetProductById(item.id)));
+
+    document.getElementById('cartItemsBody').innerHTML = cart.map((item, idx) => {
+      const p = products[idx];
+      if (!p) return '';
+      return `
+        <tr>
+          <td><button class="cart-row-remove" onclick="ladRemoveFromCart('${p.id}'); renderCart();" title="Quitar">✕</button></td>
+          <td>
+            <div class="cart-product-cell">
+              <div class="ph ${p.img}"></div>
+              <a href="producto.html?id=${p.id}">${p.name}</a>
+            </div>
+          </td>
+          <td>${ladFormatPrice(p.price)}</td>
+          <td>
+            <div class="qty-box">
+              <button type="button" onclick="ladUpdateQty('${p.id}', ${item.qty - 1}); renderCart();">−</button>
+              <input type="text" value="${item.qty}" readonly>
+              <button type="button" onclick="ladUpdateQty('${p.id}', ${item.qty + 1}); renderCart();">+</button>
+            </div>
+          </td>
+          <td style="font-weight:600;">${ladFormatPrice(p.price * item.qty)}</td>
+        </tr>`;
+    }).join('');
+
+    await updateSummary();
+  }
+
+  async function updateSummary() {
+    const subtotal = await ladCartTotal();
+    const discount = subtotal * discountPct;
+    const shipping = getShippingCost();
+    const total = subtotal - discount + shipping;
+
+    document.getElementById('sumSubtotal').textContent = ladFormatPrice(subtotal);
+    document.getElementById('sumTotal').textContent = ladFormatPrice(total);
+
+    const discountRow = document.getElementById('sumDiscountRow');
+    if (discountPct > 0) {
+      discountRow.style.display = 'table-row';
+      document.getElementById('sumDiscount').textContent = '-' + ladFormatPrice(discount);
+    } else {
+      discountRow.style.display = 'none';
+    }
+  }
+
+  document.getElementById('provinciaSelect').addEventListener('change', () => { updateZonaLabel(); updateSummary(); });
+  document.querySelectorAll('input[name="shipping"]').forEach(r => r.addEventListener('change', updateSummary));
+  document.getElementById('btnActualizarTotales').addEventListener('click', () => { updateZonaLabel(); updateSummary(); });
+
+  document.getElementById('applyDiscount').addEventListener('click', () => {
+    const code = document.getElementById('discountCode').value.trim().toUpperCase();
+    const msg = document.getElementById('discountMsg');
+    if (code === 'LAD10') {
+      discountPct = 0.10;
+      msg.style.color = '#3d8a5c';
+      msg.textContent = '¡Código aplicado! 10% de descuento.';
+    } else if (code === '') {
+      msg.textContent = '';
+      discountPct = 0;
+    } else {
+      discountPct = 0;
+      msg.style.color = '#A94442';
+      msg.textContent = 'Código inválido o vencido.';
+    }
+    updateSummary();
+  });
+
+  document.getElementById('finalizarPedidoBtn').addEventListener('click', async (e) => {
+    e.preventDefault();
+    if (ladGetCart().length === 0) { alert('Tu carrito está vacío.'); return; }
+    if (!(await ladIsLoggedIn())) {
+      window.location.href = 'login.html?redirect=' + encodeURIComponent('checkout.html');
+    } else {
+      window.location.href = 'checkout.html';
+    }
+  });
+
+  updateZonaLabel();
+  renderCart();
+</script>
+</body>
+</html>

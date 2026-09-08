@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Servicio — Lad Flooring</title>
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .includes-list { list-style: none; padding: 0; margin: 0; }
+  .includes-list li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; color: #3C5763; }
+  .includes-list li::before { content: '✓'; color: var(--gold); font-weight: bold; flex-shrink: 0; }
+</style>
+</head>
+<body data-page="servicios">
+
+<div id="lad-header"></div>
+
+<div class="container">
+  <div class="breadcrumb"><a href="index.html">Inicio</a> / <a href="servicios.html">Servicios</a> / <span id="crumbName">Servicio</span></div>
+</div>
+
+<section class="section-tight">
+  <div class="container">
+    <div id="serviceDetail" class="grid grid-2" style="gap:48px;align-items:start;"></div>
+  </div>
+</section>
+
+<section class="section bg-cream">
+  <div class="container">
+    <div class="section-header">
+      <span class="eyebrow">Otros servicios</span>
+      <h2>También te puede interesar</h2>
+    </div>
+    <div class="grid grid-3" id="relatedServices"></div>
+  </div>
+</section>
+
+<div id="lad-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/products.js"></script>
+<script src="js/services.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/common.js"></script>
+<script>
+(async () => {
+  const params = new URLSearchParams(window.location.search);
+  const service = await ladGetServiceById(params.get('id')) || (await ladGetServices())[0];
+
+  document.title = service.name + ' — Lad Flooring';
+  document.getElementById('crumbName').textContent = service.name;
+
+  document.getElementById('serviceDetail').innerHTML = `
+    <div class="ph ${service.img}" style="height:420px;border-radius:var(--radius-lg);">
+      <span class="ph-tag">Foto: ${service.name.toLowerCase()}</span>
+    </div>
+    <div>
+      <span class="badge badge-outline">${service.category}</span>
+      <h1 style="margin-top:14px;">${service.name}</h1>
+      <p>${service.description}</p>
+      <h4>¿Qué incluye?</h4>
+      <ul class="includes-list">
+        ${service.includes.map(item => `<li>${item}</li>`).join('')}
+      </ul>
+      <div class="divider"></div>
+      <a href="cotizacion.html?modulo=${encodeURIComponent(service.category === 'Outdoors' ? 'Outdoors / Decks' : service.category)}" class="btn btn-primary btn-lg" style="margin-top:8px;">Solicitar cotización para este servicio</a>
+    </div>
+  `;
+
+  const allServices = await ladGetServices();
+  document.getElementById('relatedServices').innerHTML = allServices
+    .filter(s => s.id !== service.id)
+    .slice(0, 3)
+    .map(s => `
+      <div class="card">
+        <a href="servicio.html?id=${s.id}"><div class="card-img ph ${s.img}"></div></a>
+        <div class="card-body">
+          <span class="badge badge-outline">${s.category}</span>
+          <h3 style="margin-top:10px;"><a href="servicio.html?id=${s.id}">${s.name}</a></h3>
+          <p>${s.shortDescription}</p>
+        </div>
+        <div class="card-footer">
+          <a href="servicio.html?id=${s.id}" class="btn btn-outline btn-sm" style="color:var(--navy);border-color:var(--navy);">Ver más</a>
+        </div>
+      </div>
+    `).join('');
+})();
+</script>
+</body>
+</html>

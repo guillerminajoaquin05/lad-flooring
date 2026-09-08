@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seguimiento de Envío — Lad Flooring</title>
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .tracker { display:flex; justify-content:space-between; margin:40px 0; position:relative; }
+  .tracker::before { content:''; position:absolute; top:16px; left:0; right:0; height:2px; background:var(--border); z-index:0; }
+  .tracker-step { position:relative; z-index:1; flex:1; text-align:center; }
+  .tracker-dot { width:34px; height:34px; border-radius:50%; background:var(--white); border:2px solid var(--border); margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-size:0.85rem; color:#9AA9AE; }
+  .tracker-step.done .tracker-dot { background:var(--gold); border-color:var(--gold); color:#fff; box-shadow: 0 6px 16px rgba(185,137,80,0.4); }
+  .tracker-step.done span.label { color:var(--navy); }
+  .tracker-step span.label { font-size:0.82rem; color:#9AA9AE; }
+  .info-card { border:1px solid var(--border); border-radius:var(--radius); padding:20px; background:var(--white); box-shadow: var(--shadow-card); }
+</style>
+</head>
+<body data-page="usuario">
+
+<div id="lad-header"></div>
+
+<section class="section-tight">
+  <div class="container" style="max-width:900px;">
+    <div class="breadcrumb"><a href="usuario.html">Mi cuenta</a> / Seguimiento de envío</div>
+    <h1>Seguimiento de tu Envío</h1>
+    <p>Pedido <strong id="orderIdLabel">#—</strong> — <span id="zonaLabel">Cargando...</span></p>
+
+    <div id="paymentNote" class="pay-note" style="display:none;background:#FBF3E7;border:1px solid var(--gold);border-radius:var(--radius);padding:12px 14px;font-size:0.85rem;margin-bottom:20px;"></div>
+
+    <div class="tracker" id="tracker"></div>
+
+    <div class="grid grid-2" style="gap:24px;">
+      <div class="info-card">
+        <h4>Detalle del envío</h4>
+        <p style="font-size:0.9rem;" id="shippingDetail">—</p>
+      </div>
+      <div class="info-card">
+        <h4>Contacto con el courier</h4>
+        <p style="font-size:0.9rem;">Si necesitás coordinar el horario de entrega o tenés dudas sobre el estado de tu paquete, podés contactar directamente a la empresa de logística.</p>
+        <a href="#" title="Agregar número de WhatsApp" class="btn btn-whatsapp btn-sm" style="margin-top:8px;">Contactar courier</a>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <p style="font-size:0.82rem;color:#8199a3;">
+      Nota interna: esta sección usa tarifas fijas (Retiro en sucursal / CABA / GBA / Interior) como placeholder.
+      Cuando definamos si van a integrar cálculo automático por código postal con Andreani, Correo Argentino, Envío Pack o Ship Now,
+      reemplazamos esta pantalla por el widget de tracking de la API correspondiente.
+    </p>
+  </div>
+</section>
+
+<div id="lad-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/products.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/common.js"></script>
+<script>
+  const STATUS_STEPS = ['preparando', 'despachado', 'en_camino', 'entregado'];
+  const STATUS_LABELS = { preparando: 'Preparando pedido', despachado: 'Despachado', en_camino: 'En camino', entregado: 'Entregado' };
+  const ZONA_LABELS = { caba: 'Envío CABA', gba: 'Envío GBA', cercano: 'Envío Interior (zona cercana)', lejano: 'Envío Interior (zona lejana)' };
+  const PAY_LABELS = { pendiente: 'Pendiente', aprobado: 'Aprobado', rechazado: 'Rechazado' };
+
+  function renderTracker(orderStatus) {
+    const currentIdx = STATUS_STEPS.indexOf(orderStatus);
+    document.getElementById('tracker').innerHTML = STATUS_STEPS.map((key, i) => {
+      let dotContent = String(i + 1);
+      let doneClass = '';
+      if (i < currentIdx || orderStatus === 'entregado') { dotContent = '✓'; doneClass = 'done'; }
+      else if (i === currentIdx) { dotContent = '➜'; doneClass = 'done'; }
+      return `<div class="tracker-step ${doneClass}"><div class="tracker-dot">${dotContent}</div><span class="label">${STATUS_LABELS[key]}</span></div>`;
+    }).join('');
+  }
+
+  (async function initEnvio() {
+    if (!(await ladIsLoggedIn())) {
+      window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const pedidoId = params.get('pedido');
+    const container = document.querySelector('.container');
+
+    if (!pedidoId) {
+      container.innerHTML = '<p style="padding:60px 0;text-align:center;">No se especificó ningún pedido. <a href="usuario.html" style="color:var(--gold);">Volver a Mi Cuenta</a></p>';
+      return;
+    }
+
+    const { data: order, error } = await ladSupabase
+      .from('orders')
+      .select('*')
+      .eq('id', pedidoId)
+      .single();
+
+    if (error || !order) {
+      container.innerHTML = '<p style="padding:60px 0;text-align:center;">No encontramos ese pedido, o no tenés permiso para verlo. <a href="usuario.html" style="color:var(--gold);">Volver a Mi Cuenta</a></p>';
+      return;
+    }
+
+    document.getElementById('orderIdLabel').textContent = '#' + order.id;
+    document.getElementById('zonaLabel').textContent = ZONA_LABELS[order.shipping_zone] || order.shipping_zone;
+
+    document.getElementById('shippingDetail').innerHTML = `
+      <strong>Método:</strong> ${ZONA_LABELS[order.shipping_zone] || order.shipping_zone}<br>
+      <strong>Dirección:</strong> ${order.direccion}${order.depto ? ', ' + order.depto : ''}, ${order.localidad}, ${order.provincia}<br>
+      <strong>Código postal:</strong> ${order.codigo_postal}<br>
+      <strong>Fecha del pedido:</strong> ${new Date(order.created_at).toLocaleDateString('es-AR')}<br>
+      <strong>Estado del pago:</strong> ${PAY_LABELS[order.payment_status] || order.payment_status}
+    `;
+
+    if (order.payment_method === 'transferencia' && order.payment_status === 'pendiente') {
+      const note = document.getElementById('paymentNote');
+      note.style.display = 'block';
+      note.textContent = 'Tu pago por transferencia todavía está pendiente de aprobación. En cuanto confirmemos la acreditación, tu pedido empieza a prepararse.';
+      document.getElementById('tracker').innerHTML = '';
+    } else {
+      renderTracker(order.order_status);
+    }
+  })();
+</script>
+</body>
+</html>

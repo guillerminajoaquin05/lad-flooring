@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preguntas Frecuentes — Lad Flooring</title>
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .faq-list { max-width: 760px; margin: 0 auto; }
+  .faq-item {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+  .faq-item summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    font-size: 1.05rem;
+    color: var(--navy);
+  }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary .faq-icon {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    color: var(--gold);
+    transition: transform 0.25s ease;
+  }
+  .faq-item[open] summary .faq-icon { transform: rotate(45deg); }
+  .faq-item .faq-body { padding: 0 24px 22px; color: #3C5763; }
+</style>
+</head>
+<body data-page="faq">
+
+<div id="lad-header"></div>
+
+<section class="section-tight bg-navy text-center section-decorated">
+  <div class="bg-blob" style="width:300px;height:300px;top:-110px;left:15%;background:var(--gold);"></div>
+  <div class="bg-blob" style="width:260px;height:260px;bottom:-120px;right:12%;background:var(--steel-blue);"></div>
+  <div class="container">
+    <span class="eyebrow">¿Tenés dudas?</span>
+    <h1>Preguntas Frecuentes</h1>
+    <p style="max-width:600px;margin:0 auto;">Las consultas más habituales sobre nuestros servicios, envíos y compras. Si no encontrás lo que buscás, escribinos.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="faq-list">
+
+      <details class="faq-item" open>
+        <summary>¿Cuánto tarda la colocación de un piso?<span class="faq-icon">+</span></summary>
+        <div class="faq-body">Depende de la superficie y el tipo de trabajo. Una colocación estándar de piso flotante en un ambiente de tamaño medio suele tomar entre 1 y 3 días. Para pulido e hidrolaqueado de pisos existentes, el plazo habitual es de 3 a 5 días (incluyendo el secado). Te damos un cronograma estimado antes de empezar la obra.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary>¿Hacen envíos a todo el país?<span class="faq-icon">+</span></summary>
+        <div class="faq-body">Sí. Además del retiro sin cargo por sucursal, ofrecemos envío a CABA, GBA e Interior. El costo y el tiempo estimado se calculan en el carrito antes de confirmar la compra.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary><span class="faq-icon">+</span></summary>
+        <div class="faq-body"></div>
+      </details>
+
+      <details class="faq-item">
+        <summary>¿Cómo puedo recibir asesoramiento personalizado?<span class="faq-icon">+</span></summary>
+        <div class="faq-body">Podés contactarte con nuestro equipo de ventas a través de WhatsApp, teléfono, mail o contactarnos mediante nuestro formulario de contacto.</div>
+      </details>
+
+    </div>
+  </div>
+</section>
+
+<section class="section bg-cream text-center">
+  <div class="container">
+    <h2>¿No encontraste tu respuesta?</h2>
+    <p style="max-width:500px;margin:0 auto 24px;">Escribinos y te ayudamos a resolver cualquier duda sobre tu compra o tu proyecto.</p>
+    <a href="#" title="Agregar número de WhatsApp" class="btn btn-whatsapp">Consultar por WhatsApp</a>
+  </div>
+</section>
+
+<div id="lad-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/products.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/common.js"></script>
+</body>
+</html>

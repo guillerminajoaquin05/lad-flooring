@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Servicios — Lad Flooring</title>
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="servicios">
+
+<div id="lad-header"></div>
+
+<section class="section-tight bg-navy text-center section-decorated">
+  <div class="bg-blob" style="width:340px;height:340px;top:-120px;left:-80px;background:var(--gold);"></div>
+  <div class="bg-blob" style="width:280px;height:280px;bottom:-140px;right:-60px;background:var(--steel-blue);"></div>
+  <div class="container">
+    <span class="eyebrow">Lo que hacemos</span>
+    <h1>Tratamientos y Colocación a medida</h1>
+    <p style="max-width:640px;margin:0 auto;">Explicamos en detalle cada servicio para que sepas qué esperar. Si tenés dudas, te asesoramos sin cargo antes de empezar.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="grid grid-3" id="servicesGrid"></div>
+  </div>
+</section>
+
+<section class="section bg-cream text-center section-decorated">
+  <div class="bg-blob" style="width:300px;height:300px;top:-100px;right:10%;background:var(--dusty-rose);opacity:0.6;"></div>
+  <div class="bg-blob" style="width:220px;height:220px;bottom:-80px;left:8%;background:var(--powder-blue);opacity:0.6;"></div>
+  <div class="container">
+    <span class="eyebrow">¿Tenés un proyecto en mente?</span>
+    <h2>Pedí tu presupuesto sin cargo</h2>
+    <p style="max-width:560px;margin:0 auto 24px;">Contanos qué necesitás y te respondemos con una propuesta a medida en menos de 24 hs hábiles.</p>
+    <div class="flex" style="justify-content:center;gap:16px;flex-wrap:wrap;">
+      <a href="cotizacion.html" class="btn btn-primary">Solicitar Presupuesto</a>
+      <a href="#" title="Agregar número de WhatsApp" class="btn btn-whatsapp">Consultar por WhatsApp</a>
+    </div>
+  </div>
+</section>
+
+<div id="lad-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/products.js"></script>
+<script src="js/services.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/common.js"></script>
+<script>
+  const ANCHOR_BY_SERVICE = {
+    'pulido-hidrolaqueado': 'madera',
+    'colocacion-decks': 'outdoor',
+    'pisos-deportivos': 'deportivos'
+  };
+
+  (async () => {
+    const services = await ladGetServices();
+    document.getElementById('servicesGrid').innerHTML = services.map(s => {
+      const modulo = encodeURIComponent(s.category === 'Outdoors' ? 'Outdoors / Decks' : s.category);
+      const anchorId = ANCHOR_BY_SERVICE[s.id] || '';
+      return `
+        <div class="card" ${anchorId ? `id="${anchorId}"` : ''}>
+          <a href="servicio.html?id=${s.id}"><div class="card-img ph ${s.img}"><span class="ph-tag">Foto: ${s.name.toLowerCase()}</span></div></a>
+          <div class="card-body">
+            <span class="badge badge-outline">${s.category}</span>
+            <h3 style="margin-top:10px;"><a href="servicio.html?id=${s.id}">${s.name}</a></h3>
+            <p>${s.shortDescription}</p>
+          </div>
+          <div class="card-footer">
+            <a href="servicio.html?id=${s.id}" class="btn btn-outline btn-sm" style="color:var(--navy);border-color:var(--navy);">Ver más</a>
+            <a href="cotizacion.html?modulo=${modulo}" class="btn btn-primary btn-sm">Consultar</a>
+          </div>
+        </div>`;
+    }).join('');
+  })();
+</script>
+</body>
+</html>

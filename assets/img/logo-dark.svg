@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 90" fill="none">
+  <g>
+    <polygon points="6,46 34,18 44,18 16,46" fill="#82A6B3"/>
+    <polygon points="6,60 34,32 44,32 16,60" fill="#1D3A47"/>
+    <polygon points="6,74 34,46 44,46 16,74" fill="#82A6B3"/>
+  </g>
+  <text x="66" y="42" font-family="'Georgia Pro','Georgia',serif" font-size="30" letter-spacing="6" fill="#1D3A47">LAD</text>
+  <text x="66" y="63" font-family="'Georgia Pro','Georgia',serif" font-size="17" letter-spacing="3" fill="#1D3A47">FLOORING</text>
+  <text x="66" y="78" font-family="'Georgia Pro','Georgia',serif" font-size="8.5" letter-spacing="3" fill="#82A6B3">PISOS DE MADERA</text>
+</svg>

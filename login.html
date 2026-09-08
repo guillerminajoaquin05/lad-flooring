@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iniciar sesión — Lad Flooring</title>
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="login">
+
+<div class="split-auth">
+  <div class="visual" style="background-image:url('assets/img/hero-piso-madera.png');">
+    <p class="quote">"Más de 20 años acompañando a familias y empresas a elegir su piso ideal."</p>
+  </div>
+  <div class="panel">
+    <div style="max-width:420px;width:100%;">
+      <a href="index.html"><img src="assets/img/logo-dark.svg" alt="Lad Flooring" style="height:70px;margin-bottom:18px;"></a>
+
+      <!-- Vista: login -->
+      <div id="viewLogin">
+        <div id="checkoutStepperMount"></div>
+        <h2>Iniciar sesión</h2>
+        <p style="margin-bottom:24px;">Ingresá para ver tus compras y el estado de tus envíos.</p>
+
+        <button type="button" id="btnGoogleLogin" class="btn btn-outline btn-block" style="color:var(--navy);border-color:var(--border);gap:10px;margin-bottom:20px;">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.09-1.8 2.73v2.27h2.92c1.71-1.57 2.68-3.88 2.68-6.64z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.27c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.71H.96v2.34C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.97 10.7c-.18-.54-.28-1.11-.28-1.7s.1-1.16.28-1.7V4.96H.96C.35 6.17 0 7.55 0 9s.35 2.83.96 4.04l3.01-2.34z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l3.01 2.34C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+          Continuar con Google
+        </button>
+
+        <div class="flex" style="align-items:center;gap:12px;margin-bottom:20px;">
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+          <span style="font-size:0.8rem;color:#9AA9AE;">o ingresá con tu email</span>
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+        </div>
+
+        <form id="formLogin" novalidate>
+          <div class="field" id="fEmailLogin">
+            <label for="emailLogin">Email</label>
+            <input type="email" id="emailLogin" placeholder="tu@email.com" required>
+            <span class="form-error">Ingresá un email válido.</span>
+          </div>
+          <div class="field" id="fPassLogin">
+            <label for="passLogin">Contraseña</label>
+            <input type="password" id="passLogin" placeholder="Tu contraseña" required>
+            <span class="form-error">Ingresá tu contraseña.</span>
+          </div>
+          <div class="flex-between" style="margin-bottom:24px;">
+            <label class="checkbox-row" style="align-items:center;"><input type="checkbox"> Recordarme</label>
+            <a href="#" id="linkRecuperar" style="color:var(--gold);font-size:0.88rem;">¿Olvidaste tu contraseña?</a>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Ingresar</button>
+        </form>
+        <p class="form-foot">¿No tenés cuenta? <a href="registro.html" id="linkRegistrate" style="color:var(--gold);text-decoration:underline;">Registrate</a></p>
+      </div>
+
+      <!-- Vista: recuperar contraseña -->
+      <div id="viewRecuperar" style="display:none;">
+        <h2>Recuperar contraseña</h2>
+        <p style="margin-bottom:24px;">Ingresá tu email y te enviaremos un link para restablecer tu contraseña.</p>
+        <form id="formRecuperar" novalidate>
+          <div class="field" id="fEmailRecuperar">
+            <label for="emailRecuperar">Email</label>
+            <input type="email" id="emailRecuperar" placeholder="tu@email.com" required>
+            <span class="form-error">Ingresá un email válido.</span>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Enviar link de recupero</button>
+        </form>
+        <p class="form-foot"><a href="#" id="linkVolverLogin" style="color:var(--gold);">← Volver a iniciar sesión</a></p>
+      </div>
+
+      <!-- Vista: confirmación -->
+      <div id="viewConfirm" style="display:none;text-align:center;">
+        <div style="font-size:2.4rem;margin-bottom:12px;">✓</div>
+        <h2>Revisá tu email</h2>
+        <p>Te enviamos un link para restablecer tu contraseña a tu casilla de correo.</p>
+        <a href="login.html" class="btn btn-outline" style="color:var(--navy);margin-top:16px;">Volver al inicio de sesión</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/auth.js"></script>
+<script>
+const viewLogin = document.getElementById('viewLogin');
+const viewRecuperar = document.getElementById('viewRecuperar');
+const viewConfirm = document.getElementById('viewConfirm');
+
+// Si venimos del carrito (checkout), mostramos el stepper y mantenemos el redirect
+const redirectTo = new URLSearchParams(window.location.search).get('redirect');
+if (redirectTo) {
+  document.getElementById('checkoutStepperMount').innerHTML = ladCheckoutStepperHTML(1);
+  document.getElementById('linkRegistrate').href = 'registro.html?redirect=' + encodeURIComponent(redirectTo);
+}
+
+document.getElementById('btnGoogleLogin').addEventListener('click', async () => {
+  if (!ladSupabase) {
+    alert('Supabase todavía no está conectado (faltan la URL y la anon key en js/supabase-config.js).');
+    return;
+  }
+  await ladSupabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin + '/' + (redirectTo || 'usuario.html')
+    }
+  });
+});
+
+document.getElementById('linkRecuperar').addEventListener('click', (e) => {
+  e.preventDefault();
+  viewLogin.style.display = 'none';
+  viewRecuperar.style.display = 'block';
+});
+document.getElementById('linkVolverLogin').addEventListener('click', (e) => {
+  e.preventDefault();
+  viewRecuperar.style.display = 'none';
+  viewLogin.style.display = 'block';
+});
+
+document.getElementById('formLogin').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('emailLogin');
+  const pass = document.getElementById('passLogin');
+  let valid = true;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) { document.getElementById('fEmailLogin').classList.add('has-error'); valid = false; }
+  else document.getElementById('fEmailLogin').classList.remove('has-error');
+  if (!pass.value) { document.getElementById('fPassLogin').classList.add('has-error'); valid = false; }
+  else document.getElementById('fPassLogin').classList.remove('has-error');
+  if (!valid) return;
+
+  if (!ladSupabase) {
+    alert('Supabase todavía no está conectado (faltan la URL y la anon key en js/supabase-config.js).');
+    return;
+  }
+
+  const submitBtn = document.querySelector('#formLogin button[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Ingresando...';
+
+  const { error } = await ladSupabase.auth.signInWithPassword({ email: email.value, password: pass.value });
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Ingresar';
+
+  if (error) {
+    document.getElementById('fPassLogin').classList.add('has-error');
+    document.querySelector('#fPassLogin .form-error').textContent = ladAuthErrorMessage(error);
+    return;
+  }
+
+  if (redirectTo) {
+    window.location.href = redirectTo;
+  } else {
+    const session = await ladGetSession();
+    window.location.href = (session && session.role === 'admin') ? 'admin.html' : 'usuario.html';
+  }
+});
+
+document.getElementById('formRecuperar').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('emailRecuperar');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+    document.getElementById('fEmailRecuperar').classList.add('has-error');
+    return;
+  }
+  if (ladSupabase) {
+    await ladSupabase.auth.resetPasswordForEmail(email.value);
+  }
+  viewRecuperar.style.display = 'none';
+  viewConfirm.style.display = 'block';
+});
+</script>
+</body>
+</html>

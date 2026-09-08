@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crear cuenta — Lad Flooring</title>
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="registro">
+
+<div class="split-auth">
+  <div class="visual" style="background-image:url('assets/img/hero-piso-madera.png');">
+    <p class="quote">"Elegir bien el piso es elegir cómo se va a sentir tu casa todos los días." — Equipo Lad Flooring</p>
+  </div>
+  <div class="panel">
+    <div style="max-width:420px;width:100%;">
+      <a href="index.html"><img src="assets/img/logo-dark.svg" alt="Lad Flooring" style="height:70px;margin-bottom:18px;"></a>
+      <div id="checkoutStepperMount"></div>
+      <h2>Creá tu cuenta</h2>
+      <p style="margin-bottom:24px;">Sumate para guardar tus compras, hacer seguimiento de tus envíos y recibir promociones exclusivas.</p>
+
+      <button type="button" id="btnGoogleRegistro" class="btn btn-outline btn-block" style="color:var(--navy);border-color:var(--border);gap:10px;margin-bottom:20px;">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.09-1.8 2.73v2.27h2.92c1.71-1.57 2.68-3.88 2.68-6.64z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.27c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.71H.96v2.34C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.97 10.7c-.18-.54-.28-1.11-.28-1.7s.1-1.16.28-1.7V4.96H.96C.35 6.17 0 7.55 0 9s.35 2.83.96 4.04l3.01-2.34z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l3.01 2.34C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+        Continuar con Google
+      </button>
+
+      <div class="flex" style="align-items:center;gap:12px;margin-bottom:20px;">
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        <span style="font-size:0.8rem;color:#9AA9AE;">o registrate con tu email</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+      </div>
+
+      <form id="formRegistro" novalidate>
+        <div class="grid grid-2" style="gap:16px;">
+          <div class="field" id="fNombre">
+            <label for="nombre">Nombre</label>
+            <input type="text" id="nombre" name="nombre" placeholder="Tu nombre" required>
+            <span class="form-error">Ingresá tu nombre.</span>
+          </div>
+          <div class="field" id="fApellido">
+            <label for="apellido">Apellido</label>
+            <input type="text" id="apellido" name="apellido" placeholder="Tu apellido" required>
+            <span class="form-error">Ingresá tu apellido.</span>
+          </div>
+        </div>
+        <div class="grid grid-2" style="gap:16px;">
+          <div class="field" id="fEmail">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="tu@email.com" required>
+            <span class="form-error">Ingresá un email válido.</span>
+          </div>
+          <div class="field" id="fTelefono">
+            <label for="telefono">Teléfono</label>
+            <input type="tel" id="telefono" name="telefono" placeholder="Ej: 11 5555-0192" required>
+            <span class="form-error">Ingresá un teléfono de contacto.</span>
+          </div>
+        </div>
+        <div class="field" id="fPass">
+          <label for="password">Contraseña</label>
+          <input type="password" id="password" name="password" placeholder="Mínimo 8 caracteres" minlength="8" required>
+          <span class="form-error">La contraseña debe tener al menos 8 caracteres.</span>
+        </div>
+        <div class="checkbox-row" style="margin-bottom:24px;">
+          <input type="checkbox" id="newsletter" name="newsletter" checked>
+          <label for="newsletter" style="margin:0;">Quiero suscribirme a novedades y promociones por email de Lad Flooring.</label>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Crear cuenta</button>
+      </form>
+
+      <div id="viewCheckEmail" style="display:none;text-align:center;">
+        <div style="font-size:2.4rem;margin-bottom:12px;">✓</div>
+        <h2>¡Revisá tu email!</h2>
+        <p>Te enviamos un link de confirmación. Confirmá tu cuenta para poder iniciar sesión.</p>
+      </div>
+
+      <p class="form-foot">¿Ya tenés una cuenta? <a href="login.html" id="linkIniciarSesion" style="color:var(--gold);text-decoration:underline;">Iniciá sesión</a></p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/auth.js"></script>
+<script>
+const redirectTo = new URLSearchParams(window.location.search).get('redirect');
+if (redirectTo) {
+  document.getElementById('checkoutStepperMount').innerHTML = ladCheckoutStepperHTML(1);
+  document.getElementById('linkIniciarSesion').href = 'login.html?redirect=' + encodeURIComponent(redirectTo);
+}
+
+document.getElementById('btnGoogleRegistro').addEventListener('click', async () => {
+  if (!ladSupabase) {
+    alert('Supabase todavía no está conectado (faltan la URL y la anon key en js/supabase-config.js).');
+    return;
+  }
+  await ladSupabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin + '/' + (redirectTo || 'usuario.html')
+    }
+  });
+});
+
+document.getElementById('formRegistro').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  let valid = true;
+  const fields = [
+    { id: 'fNombre', el: 'nombre', test: v => v.trim().length > 0 },
+    { id: 'fApellido', el: 'apellido', test: v => v.trim().length > 0 },
+    { id: 'fEmail', el: 'email', test: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) },
+    { id: 'fTelefono', el: 'telefono', test: v => v.trim().length >= 6 },
+    { id: 'fPass', el: 'password', test: v => v.length >= 8 }
+  ];
+  fields.forEach(f => {
+    const input = document.getElementById(f.el);
+    const wrap = document.getElementById(f.id);
+    if (!f.test(input.value)) { wrap.classList.add('has-error'); valid = false; }
+    else wrap.classList.remove('has-error');
+  });
+  if (!valid) return;
+
+  if (!ladSupabase) {
+    alert('Supabase todavía no está conectado (faltan la URL y la anon key en js/supabase-config.js).');
+    return;
+  }
+
+  const submitBtn = this.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Creando cuenta...';
+
+  const { error } = await ladSupabase.auth.signUp({
+    email: document.getElementById('email').value,
+    password: document.getElementById('password').value,
+    options: {
+      data: {
+        nombre: document.getElementById('nombre').value,
+        apellido: document.getElementById('apellido').value,
+        telefono: document.getElementById('telefono').value,
+        newsletter: document.getElementById('newsletter').checked
+      }
+    }
+  });
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Crear cuenta';
+
+  if (error) {
+    document.getElementById('fEmail').classList.add('has-error');
+    document.querySelector('#fEmail .form-error').textContent = ladAuthErrorMessage(error);
+    return;
+  }
+
+  document.getElementById('formRegistro').style.display = 'none';
+  document.getElementById('viewCheckEmail').style.display = 'block';
+});
+</script>
+</body>
+</html>

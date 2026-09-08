@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Producto — Lad Flooring</title>
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="tienda">
+
+<div id="lad-header"></div>
+
+<div class="container">
+  <div class="breadcrumb"><a href="index.html">Inicio</a> / <a href="tienda.html">Tienda</a> / <span id="crumbName">Producto</span></div>
+</div>
+
+<section class="section-tight">
+  <div class="container">
+    <div id="productDetail" class="grid grid-2" style="gap:48px;align-items:start;"></div>
+  </div>
+</section>
+
+<section class="section bg-cream">
+  <div class="container">
+    <div class="section-header">
+      <span class="eyebrow">También te puede interesar</span>
+      <h2>Otros productos</h2>
+    </div>
+    <div class="grid grid-4" id="relatedGrid"></div>
+  </div>
+</section>
+
+<div id="lad-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/products.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/common.js"></script>
+<script>
+(async () => {
+  const params = new URLSearchParams(window.location.search);
+  const product = await ladGetProductById(params.get('id')) || (await ladGetProducts())[0];
+
+  document.title = product.name + ' — Lad Flooring';
+  document.getElementById('crumbName').textContent = product.name;
+
+  document.getElementById('productDetail').innerHTML = `
+    <div class="ph ${product.img}" style="height:460px;border-radius:var(--radius-lg);">
+      <span class="ph-tag">Foto: ${product.name.toLowerCase()}</span>
+    </div>
+    <div>
+      <span class="badge badge-outline">${product.category}</span>
+      <h1 style="margin-top:14px;">${product.name}</h1>
+      <div style="margin:14px 0;">
+        ${product.oldPrice ? `<span class="price-old">${ladFormatPrice(product.oldPrice)}</span>` : ''}
+        <span class="price" style="font-size:1.6rem;">${ladFormatPrice(product.price)}</span>
+        ${product.line === 'flotantes' ? '<span style="color:#8199a3;font-size:0.9rem;"> / m²</span>' : ''}
+      </div>
+      <p>${product.description}</p>
+      <p style="font-size:0.88rem;color:${product.stock > 0 ? '#3d8a5c' : '#A94442'};">
+        ${product.stock > 0 ? `✓ Stock disponible (${product.stock} unidades)` : '✕ Sin stock'}
+      </p>
+      <div class="flex" style="align-items:center;gap:16px;margin:24px 0;">
+        <div class="qty-box">
+          <button id="qtyMinus">−</button>
+          <input id="qtyInput" type="number" value="1" min="1">
+          <button id="qtyPlus">+</button>
+        </div>
+        <button id="addToCartBtn" class="btn btn-primary" ${product.stock === 0 ? 'disabled' : ''}>Agregar al carrito</button>
+      </div>
+      <div class="divider"></div>
+      <p style="font-size:0.85rem;color:#8199a3;">Envíos a todo el país. Consultá el costo de envío en el carrito según tu código postal.</p>
+    </div>
+  `;
+
+  document.getElementById('qtyMinus').addEventListener('click', () => {
+    const input = document.getElementById('qtyInput');
+    input.value = Math.max(1, parseInt(input.value) - 1);
+  });
+  document.getElementById('qtyPlus').addEventListener('click', () => {
+    const input = document.getElementById('qtyInput');
+    input.value = parseInt(input.value) + 1;
+  });
+  document.getElementById('addToCartBtn').addEventListener('click', function () {
+    const qty = parseInt(document.getElementById('qtyInput').value);
+    ladAddToCart(product.id, qty);
+    this.textContent = 'Agregado ✓';
+    setTimeout(() => this.textContent = 'Agregar al carrito', 1500);
+  });
+
+  const allProducts = await ladGetProducts();
+  document.getElementById('relatedGrid').innerHTML = allProducts
+    .filter(p => p.id !== product.id)
+    .slice(0, 4)
+    .map(p => `
+      <div class="card">
+        <a href="producto.html?id=${p.id}"><div class="card-img ph ${p.img}"></div></a>
+        <div class="card-body">
+          <h3><a href="producto.html?id=${p.id}">${p.name}</a></h3>
+        </div>
+        <div class="card-footer">
+          <span class="price">${ladFormatPrice(p.price)}</span>
+          <button class="btn btn-primary btn-sm" onclick="ladAddToCart('${p.id}')">Agregar</button>
+        </div>
+      </div>
+    `).join('');
+})();
+</script>
+</body>
+</html>
