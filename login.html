@@ -103,7 +103,7 @@ document.getElementById('btnGoogleLogin').addEventListener('click', async () => 
   await ladSupabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: window.location.origin + '/' + (redirectTo || 'usuario.html')
+      redirectTo: window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + (redirectTo || 'usuario.html')
     }
   });
 });

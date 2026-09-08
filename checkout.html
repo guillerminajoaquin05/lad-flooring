@@ -330,8 +330,9 @@
 
     if (payMethod === 'mp') {
       btn.textContent = 'Redirigiendo a Mercado Pago...';
+      const siteUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
       const { data, error } = await ladSupabase.functions.invoke('create-mp-preference', {
-        body: { items, shippingInfo, shippingCost, discountPct, couponCode }
+        body: { items, shippingInfo, shippingCost, discountPct, couponCode, siteUrl }
       });
       if (error || !data || data.error) {
         btn.disabled = false;

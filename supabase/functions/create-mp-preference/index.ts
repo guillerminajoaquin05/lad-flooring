@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     const user = userData.user;
 
     const body = await req.json();
-    const { items, shippingInfo, shippingCost, discountPct, couponCode } = body;
+    const { items, shippingInfo, shippingCost, discountPct, couponCode, siteUrl: bodySiteUrl } = body;
 
     if (!items || items.length === 0) {
       return json({ error: 'El carrito está vacío' }, 400);
@@ -81,7 +81,8 @@ Deno.serve(async (req) => {
     if (itemsError) throw itemsError;
 
     // 2. Crear la preferencia de pago en Mercado Pago
-    const siteUrl = req.headers.get('origin') || 'http://localhost:5500';
+    // Usamos la URL que manda el front (incluye subcarpeta si el sitio no vive en la raíz, ej. GitHub Pages)
+    const siteUrl = (bodySiteUrl || req.headers.get('origin') || 'http://localhost:5500/').replace(/\/$/, '');
     const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
       headers: {
