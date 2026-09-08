@@ -137,7 +137,7 @@ function ladIsImageUrl(img) {
   return !!img && !img.startsWith('ph-');
 }
 function ladImgClass(img) {
-  return ladIsImageUrl(img) ? '' : (img || 'ph-1');
+  return ladIsImageUrl(img) ? 'has-photo' : (img || 'ph-1');
 }
 function ladImgBg(img) {
   return ladIsImageUrl(img) ? `background-image:url('${img.replace(/'/g, "%27")}');` : '';

@@ -241,6 +241,8 @@ img { max-width: 100%; display: block; }
 
 /* ---------- Placeholders fotográficos (a reemplazar por fotos reales) ---------- */
 .ph { position: relative; background-size: cover; background-position: center; }
+/* Fotos reales subidas por el admin: se muestran completas, sin recortar (letterbox blanco) */
+.ph.has-photo { background-size: contain; background-repeat: no-repeat; background-color: var(--white); }
 .ph-1 { background: repeating-linear-gradient(120deg, #26485A 0 26px, #1D3A47 26px 52px); }
 .ph-2 { background: repeating-linear-gradient(120deg, #8FB0BC 0 26px, #6E939F 26px 52px); }
 .ph-3 { background: repeating-linear-gradient(120deg, #CBA876 0 26px, #B98950 26px 52px); }
