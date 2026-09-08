@@ -661,6 +661,11 @@ img { max-width: 100%; display: block; }
   .footer-grid { grid-template-columns: 1fr; }
 }
 
+/* ---------- Listas con viñetas (incluye / modo de uso) ---------- */
+.includes-list { list-style: none; padding: 0; margin: 0; }
+.includes-list li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; color: #3C5763; }
+.includes-list li::before { content: '✓'; color: var(--gold); font-weight: bold; flex-shrink: 0; }
+
 /* ---------- Breadcrumb / utilidades ---------- */
 .breadcrumb { font-size: 0.85rem; color: #5C7784; padding: var(--space-2) 0; }
 .breadcrumb a:hover { color: var(--gold); }

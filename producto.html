@@ -21,11 +21,11 @@
   </div>
 </section>
 
-<section class="section-tight" id="usageInfoSection" style="display:none;">
+<section class="section-tight" id="usageInfoSection" style="display:none;padding-top:0;">
   <div class="container" style="max-width:900px;">
-    <div class="divider"></div>
+    <div class="divider" style="margin-top:0;"></div>
     <h3>Modo de uso y recomendaciones</h3>
-    <p id="usageInfoText"></p>
+    <div id="usageInfoText"></div>
   </div>
 </section>
 
@@ -85,7 +85,8 @@
   `;
 
   if (product.usageInfo && product.usageInfo.trim()) {
-    document.getElementById('usageInfoText').textContent = product.usageInfo;
+    const usageItems = product.usageInfo.split('\n').map(v => v.trim()).filter(Boolean);
+    document.getElementById('usageInfoText').innerHTML = `<ul class="includes-list">${usageItems.map(i => `<li>${i}</li>`).join('')}</ul>`;
     document.getElementById('usageInfoSection').style.display = 'block';
   }
 

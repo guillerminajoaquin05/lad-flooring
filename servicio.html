@@ -6,11 +6,6 @@
 <title>Servicio — Lad Flooring</title>
 <link rel="icon" href="assets/img/logo-mark.svg">
 <link rel="stylesheet" href="css/style.css">
-<style>
-  .includes-list { list-style: none; padding: 0; margin: 0; }
-  .includes-list li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; color: #3C5763; }
-  .includes-list li::before { content: '✓'; color: var(--gold); font-weight: bold; flex-shrink: 0; }
-</style>
 </head>
 <body data-page="servicios">
 
@@ -26,11 +21,11 @@
   </div>
 </section>
 
-<section class="section-tight" id="usageInfoSection" style="display:none;">
+<section class="section-tight" id="usageInfoSection" style="display:none;padding-top:0;">
   <div class="container" style="max-width:900px;">
-    <div class="divider"></div>
+    <div class="divider" style="margin-top:0;"></div>
     <h3>Información adicional</h3>
-    <p id="usageInfoText"></p>
+    <div id="usageInfoText"></div>
   </div>
 </section>
 
@@ -79,7 +74,8 @@
   `;
 
   if (service.usageInfo && service.usageInfo.trim()) {
-    document.getElementById('usageInfoText').textContent = service.usageInfo;
+    const usageItems = service.usageInfo.split('\n').map(v => v.trim()).filter(Boolean);
+    document.getElementById('usageInfoText').innerHTML = `<ul class="includes-list">${usageItems.map(i => `<li>${i}</li>`).join('')}</ul>`;
     document.getElementById('usageInfoSection').style.display = 'block';
   }
 
