@@ -15,7 +15,8 @@ function ladMapProduct(row) {
     img: row.image_url,
     stock: row.stock,
     hidden: row.hidden,
-    description: row.description
+    description: row.description,
+    usageInfo: row.usage_info
   };
 }
 

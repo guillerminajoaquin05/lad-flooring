@@ -26,6 +26,14 @@
   </div>
 </section>
 
+<section class="section-tight" id="usageInfoSection" style="display:none;">
+  <div class="container" style="max-width:900px;">
+    <div class="divider"></div>
+    <h3>Información adicional</h3>
+    <p id="usageInfoText"></p>
+  </div>
+</section>
+
 <section class="section bg-cream">
   <div class="container">
     <div class="section-header">
@@ -69,6 +77,11 @@
       <a href="cotizacion.html?modulo=${encodeURIComponent(service.category === 'Outdoors' ? 'Outdoors / Decks' : service.category)}" class="btn btn-primary btn-lg" style="margin-top:8px;">Solicitar cotización para este servicio</a>
     </div>
   `;
+
+  if (service.usageInfo && service.usageInfo.trim()) {
+    document.getElementById('usageInfoText').textContent = service.usageInfo;
+    document.getElementById('usageInfoSection').style.display = 'block';
+  }
 
   const allServices = await ladGetServices();
   document.getElementById('relatedServices').innerHTML = allServices

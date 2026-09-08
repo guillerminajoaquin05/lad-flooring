@@ -9,7 +9,8 @@ function ladMapService(row) {
     shortDescription: row.short_description,
     description: row.description,
     includes: row.includes || [],
-    hidden: row.hidden
+    hidden: row.hidden,
+    usageInfo: row.usage_info
   };
 }
 
