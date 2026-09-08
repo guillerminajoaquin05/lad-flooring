@@ -130,4 +130,17 @@ async function ladRenderLayout() {
   if (typeof ladUpdateCartBadge === 'function') ladUpdateCartBadge();
 }
 
+/* Fotos de producto/servicio: "img" puede ser un placeholder de color (ph-1..ph-5)
+   o la URL real de una foto subida a Supabase Storage. ladImgClass/ladImgStyle
+   deciden cuál de las dos mostrar sin que cada pantalla tenga que repetir la lógica. */
+function ladIsImageUrl(img) {
+  return !!img && !img.startsWith('ph-');
+}
+function ladImgClass(img) {
+  return ladIsImageUrl(img) ? '' : (img || 'ph-1');
+}
+function ladImgBg(img) {
+  return ladIsImageUrl(img) ? `background-image:url('${img.replace(/'/g, "%27")}');` : '';
+}
+
 document.addEventListener('DOMContentLoaded', ladRenderLayout);

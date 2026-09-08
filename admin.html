@@ -134,14 +134,23 @@
         <div class="field"><label>Stock</label><input type="number" id="pStock" required></div>
       </div>
       <div class="field">
-        <label>Imagen (placeholder de color, hasta integrar carga de archivos)</label>
-        <select id="pImg">
+        <label>Imagen del producto</label>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
+          <div class="ph admin-thumb" id="pImgPreview" style="width:64px;height:64px;flex-shrink:0;"></div>
+          <div style="flex:1;">
+            <input type="file" id="pImgFile" accept="image/*">
+            <div id="pImgMsg" style="font-size:0.78rem;color:#8199a3;margin-top:4px;"></div>
+          </div>
+        </div>
+        <label style="font-size:0.82rem;">O usá un color placeholder (mientras no tengas la foto real)</label>
+        <select id="pImgPlaceholder">
           <option value="ph-1">Placeholder 1 (navy)</option>
           <option value="ph-2">Placeholder 2 (steel blue)</option>
           <option value="ph-3">Placeholder 3 (gold)</option>
           <option value="ph-4">Placeholder 4 (cream)</option>
           <option value="ph-5">Placeholder 5 (navy oscuro)</option>
         </select>
+        <input type="hidden" id="pImg" value="ph-1">
       </div>
       <div class="field"><label>Descripción</label><textarea id="pDescription" rows="3"></textarea></div>
       <div class="checkbox-row" style="margin-bottom:20px;"><input type="checkbox" id="pHidden"> Ocultar producto en la tienda</div>
@@ -166,14 +175,23 @@
         </select>
       </div>
       <div class="field">
-        <label>Imagen (placeholder de color, hasta integrar carga de archivos)</label>
-        <select id="sImg">
+        <label>Imagen del servicio</label>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
+          <div class="ph admin-thumb" id="sImgPreview" style="width:64px;height:64px;flex-shrink:0;"></div>
+          <div style="flex:1;">
+            <input type="file" id="sImgFile" accept="image/*">
+            <div id="sImgMsg" style="font-size:0.78rem;color:#8199a3;margin-top:4px;"></div>
+          </div>
+        </div>
+        <label style="font-size:0.82rem;">O usá un color placeholder (mientras no tengas la foto real)</label>
+        <select id="sImgPlaceholder">
           <option value="ph-1">Placeholder 1 (navy)</option>
           <option value="ph-2">Placeholder 2 (steel blue)</option>
           <option value="ph-3">Placeholder 3 (gold)</option>
           <option value="ph-4">Placeholder 4 (cream)</option>
           <option value="ph-5">Placeholder 5 (navy oscuro)</option>
         </select>
+        <input type="hidden" id="sImg" value="ph-1">
       </div>
       <div class="field"><label>Descripción corta (para la grilla de Servicios)</label><textarea id="sShortDescription" rows="2" required></textarea></div>
       <div class="field"><label>Descripción completa (para la ficha del servicio)</label><textarea id="sDescription" rows="4" required></textarea></div>
@@ -208,6 +226,48 @@
       .replace(/(^-|-$)/g, '');
   }
 
+  function ladUpdateImgPreview(previewId, value) {
+    const el = document.getElementById(previewId);
+    el.className = 'ph admin-thumb ' + ladImgClass(value);
+    el.style.cssText = 'width:64px;height:64px;flex-shrink:0;' + ladImgBg(value);
+  }
+
+  async function ladUploadImage(file, prefix) {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${prefix}/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+    const { error } = await ladSupabase.storage.from('product-images').upload(path, file);
+    if (error) throw error;
+    const { data } = ladSupabase.storage.from('product-images').getPublicUrl(path);
+    return data.publicUrl;
+  }
+
+  function ladWireImageField({ fileInputId, hiddenInputId, placeholderSelectId, previewId, msgId, storagePrefix }) {
+    document.getElementById(placeholderSelectId).addEventListener('change', (e) => {
+      document.getElementById(hiddenInputId).value = e.target.value;
+      ladUpdateImgPreview(previewId, e.target.value);
+    });
+    document.getElementById(fileInputId).addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const msg = document.getElementById(msgId);
+      msg.style.color = '#5C7784';
+      msg.textContent = 'Subiendo...';
+      try {
+        const url = await ladUploadImage(file, storagePrefix);
+        document.getElementById(hiddenInputId).value = url;
+        ladUpdateImgPreview(previewId, url);
+        msg.style.color = '#3d8a5c';
+        msg.textContent = '¡Imagen subida!';
+      } catch (err) {
+        msg.style.color = '#A94442';
+        msg.textContent = 'Error subiendo la imagen: ' + err.message;
+      }
+    });
+  }
+
+  ladWireImageField({ fileInputId: 'pImgFile', hiddenInputId: 'pImg', placeholderSelectId: 'pImgPlaceholder', previewId: 'pImgPreview', msgId: 'pImgMsg', storagePrefix: 'products' });
+  ladWireImageField({ fileInputId: 'sImgFile', hiddenInputId: 'sImg', placeholderSelectId: 'sImgPlaceholder', previewId: 'sImgPreview', msgId: 'sImgMsg', storagePrefix: 'services' });
+
   let adminProducts = [];
 
   async function loadAdminProducts() {
@@ -223,7 +283,7 @@
   function renderAdminTable() {
     document.getElementById('adminTbody').innerHTML = adminProducts.map(p => `
       <tr>
-        <td><div class="admin-thumb ph ${p.img}"></div></td>
+        <td><div class="admin-thumb ph ${ladImgClass(p.img)}" style="${ladImgBg(p.img)}"></div></td>
         <td>${p.name}</td>
         <td>${p.line === 'bona' ? 'Línea Bona' : 'Pisos Flotantes'}</td>
         <td>${ladFormatPrice(p.price)}</td>
@@ -248,6 +308,8 @@
     document.getElementById('productModalTitle').textContent = 'Agregar producto';
     document.getElementById('productForm').reset();
     document.getElementById('pId').value = '';
+    document.getElementById('pImgMsg').textContent = '';
+    ladUpdateImgPreview('pImgPreview', 'ph-1');
     openModal('productModal');
   });
 
@@ -261,6 +323,10 @@
     document.getElementById('pPrice').value = p.price;
     document.getElementById('pStock').value = p.stock;
     document.getElementById('pImg').value = p.img;
+    document.getElementById('pImgPlaceholder').value = ladIsImageUrl(p.img) ? 'ph-1' : p.img;
+    document.getElementById('pImgFile').value = '';
+    document.getElementById('pImgMsg').textContent = '';
+    ladUpdateImgPreview('pImgPreview', p.img);
     document.getElementById('pDescription').value = p.description;
     document.getElementById('pHidden').checked = p.hidden;
     openModal('productModal');
@@ -448,7 +514,7 @@
   function renderAdminServicesTable() {
     document.getElementById('adminServicesTbody').innerHTML = adminServices.map(s => `
       <tr>
-        <td><div class="admin-thumb ph ${s.img}"></div></td>
+        <td><div class="admin-thumb ph ${ladImgClass(s.img)}" style="${ladImgBg(s.img)}"></div></td>
         <td>${s.name}</td>
         <td>${s.category}</td>
         <td><span class="status-dot ${s.hidden ? 'hidden-status' : ''}">${s.hidden ? 'Oculto' : 'Visible'}</span></td>
@@ -467,6 +533,8 @@
     document.getElementById('serviceModalTitle').textContent = 'Agregar servicio';
     document.getElementById('serviceForm').reset();
     document.getElementById('sId').value = '';
+    document.getElementById('sImgMsg').textContent = '';
+    ladUpdateImgPreview('sImgPreview', 'ph-1');
     openModal('serviceModal');
   });
 
@@ -477,6 +545,10 @@
     document.getElementById('sName').value = s.name;
     document.getElementById('sCategory').value = s.category;
     document.getElementById('sImg').value = s.img;
+    document.getElementById('sImgPlaceholder').value = ladIsImageUrl(s.img) ? 'ph-1' : s.img;
+    document.getElementById('sImgFile').value = '';
+    document.getElementById('sImgMsg').textContent = '';
+    ladUpdateImgPreview('sImgPreview', s.img);
     document.getElementById('sShortDescription').value = s.shortDescription;
     document.getElementById('sDescription').value = s.description;
     document.getElementById('sIncludes').value = (s.includes || []).join('\n');

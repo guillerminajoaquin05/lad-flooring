@@ -169,7 +169,7 @@
           <td><button class="cart-row-remove" onclick="ladRemoveFromCart('${p.id}'); renderCart();" title="Quitar">✕</button></td>
           <td>
             <div class="cart-product-cell">
-              <div class="ph ${p.img}"></div>
+              <div class="ph ${ladImgClass(p.img)}" style="${ladImgBg(p.img)}"></div>
               <a href="producto.html?id=${p.id}">${p.name}</a>
             </div>
           </td>

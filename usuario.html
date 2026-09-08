@@ -104,7 +104,7 @@
         </div>
         ${o.order_items.map(item => `
           <div class="order-item">
-            <div class="ph ${item.products ? item.products.image_url : 'ph-1'}"></div>
+            <div class="ph ${item.products ? ladImgClass(item.products.image_url) : 'ph-1'}" style="${item.products ? ladImgBg(item.products.image_url) : ''}"></div>
             <div style="flex:1;">${item.products ? item.products.name : 'Producto'} × ${item.qty}</div>
           </div>`).join('')}
         <div class="flex-between" style="margin-top:10px;">

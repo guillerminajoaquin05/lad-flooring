@@ -51,7 +51,7 @@
     }
     grid.innerHTML = products.map(p => `
       <div class="card">
-        <a href="producto.html?id=${p.id}"><div class="card-img ph ${p.img}"></div></a>
+        <a href="producto.html?id=${p.id}"><div class="card-img ph ${ladImgClass(p.img)}" style="${ladImgBg(p.img)}"></div></a>
         <div class="card-body">
           <span class="badge badge-outline">${p.category}</span>
           <h3 style="margin-top:8px;"><a href="producto.html?id=${p.id}">${p.name}</a></h3>

@@ -64,7 +64,7 @@
       const anchorId = ANCHOR_BY_SERVICE[s.id] || '';
       return `
         <div class="card" ${anchorId ? `id="${anchorId}"` : ''}>
-          <a href="servicio.html?id=${s.id}"><div class="card-img ph ${s.img}"><span class="ph-tag">Foto: ${s.name.toLowerCase()}</span></div></a>
+          <a href="servicio.html?id=${s.id}"><div class="card-img ph ${ladImgClass(s.img)}" style="${ladImgBg(s.img)}">${ladIsImageUrl(s.img) ? '' : `<span class="ph-tag">Foto: ${s.name.toLowerCase()}</span>`}</div></a>
           <div class="card-body">
             <span class="badge badge-outline">${s.category}</span>
             <h3 style="margin-top:10px;"><a href="servicio.html?id=${s.id}">${s.name}</a></h3>

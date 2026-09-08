@@ -48,8 +48,8 @@
   document.getElementById('crumbName').textContent = product.name;
 
   document.getElementById('productDetail').innerHTML = `
-    <div class="ph ${product.img}" style="height:460px;border-radius:var(--radius-lg);">
-      <span class="ph-tag">Foto: ${product.name.toLowerCase()}</span>
+    <div class="ph ${ladImgClass(product.img)}" style="height:460px;border-radius:var(--radius-lg);${ladImgBg(product.img)}">
+      ${ladIsImageUrl(product.img) ? '' : `<span class="ph-tag">Foto: ${product.name.toLowerCase()}</span>`}
     </div>
     <div>
       <span class="badge badge-outline">${product.category}</span>
@@ -97,7 +97,7 @@
     .slice(0, 4)
     .map(p => `
       <div class="card">
-        <a href="producto.html?id=${p.id}"><div class="card-img ph ${p.img}"></div></a>
+        <a href="producto.html?id=${p.id}"><div class="card-img ph ${ladImgClass(p.img)}" style="${ladImgBg(p.img)}"></div></a>
         <div class="card-body">
           <h3><a href="producto.html?id=${p.id}">${p.name}</a></h3>
         </div>

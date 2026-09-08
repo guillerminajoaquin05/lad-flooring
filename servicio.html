@@ -54,8 +54,8 @@
   document.getElementById('crumbName').textContent = service.name;
 
   document.getElementById('serviceDetail').innerHTML = `
-    <div class="ph ${service.img}" style="height:420px;border-radius:var(--radius-lg);">
-      <span class="ph-tag">Foto: ${service.name.toLowerCase()}</span>
+    <div class="ph ${ladImgClass(service.img)}" style="height:420px;border-radius:var(--radius-lg);${ladImgBg(service.img)}">
+      ${ladIsImageUrl(service.img) ? '' : `<span class="ph-tag">Foto: ${service.name.toLowerCase()}</span>`}
     </div>
     <div>
       <span class="badge badge-outline">${service.category}</span>
@@ -76,7 +76,7 @@
     .slice(0, 3)
     .map(s => `
       <div class="card">
-        <a href="servicio.html?id=${s.id}"><div class="card-img ph ${s.img}"></div></a>
+        <a href="servicio.html?id=${s.id}"><div class="card-img ph ${ladImgClass(s.img)}" style="${ladImgBg(s.img)}"></div></a>
         <div class="card-body">
           <span class="badge badge-outline">${s.category}</span>
           <h3 style="margin-top:10px;"><a href="servicio.html?id=${s.id}">${s.name}</a></h3>
