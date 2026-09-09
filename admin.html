@@ -157,13 +157,12 @@
         </select>
         <input type="hidden" id="pImg" value="ph-1">
       </div>
-      <div class="field" id="pGalleryField" style="display:none;">
+      <div class="field">
         <label>Fotos adicionales (galería)</label>
         <div id="pGalleryThumbs" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;"></div>
         <input type="file" id="pGalleryFile" accept="image/*" multiple>
         <div id="pGalleryMsg" style="font-size:0.78rem;color:#8199a3;margin-top:4px;"></div>
       </div>
-      <p id="pGalleryHint" style="font-size:0.82rem;color:#8199a3;">Guardá el producto para poder agregar fotos adicionales a la galería.</p>
       <div class="field"><label>Descripción</label><textarea id="pDescription" rows="3"></textarea></div>
       <div class="field"><label>Modo de uso y recomendaciones (opcional, un punto por línea)</label><textarea id="pUsageInfo" rows="4" placeholder="Un ítem por renglón, ej:&#10;Apto para pisos de madera barnizados y corcho&#10;Tiempo de secado: 15-20 minutos"></textarea></div>
       <div class="checkbox-row" style="margin-bottom:20px;"><input type="checkbox" id="pHidden"> Ocultar producto en la tienda</div>
@@ -206,13 +205,12 @@
         </select>
         <input type="hidden" id="sImg" value="ph-1">
       </div>
-      <div class="field" id="sGalleryField" style="display:none;">
+      <div class="field">
         <label>Fotos adicionales (galería)</label>
         <div id="sGalleryThumbs" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;"></div>
         <input type="file" id="sGalleryFile" accept="image/*" multiple>
         <div id="sGalleryMsg" style="font-size:0.78rem;color:#8199a3;margin-top:4px;"></div>
       </div>
-      <p id="sGalleryHint" style="font-size:0.82rem;color:#8199a3;">Guardá el servicio para poder agregar fotos adicionales a la galería.</p>
       <div class="field"><label>Descripción corta (para la grilla de Servicios)</label><textarea id="sShortDescription" rows="2" required></textarea></div>
       <div class="field"><label>Descripción completa (para la ficha del servicio)</label><textarea id="sDescription" rows="4" required></textarea></div>
       <div class="field"><label>¿Qué incluye? (un punto por línea)</label><textarea id="sIncludes" rows="4" placeholder="Un ítem por renglón"></textarea></div>
@@ -295,13 +293,16 @@
     return idx === -1 ? null : imageUrl.slice(idx + marker.length);
   }
 
-  function ladWireGalleryField({ table, idField, fileInputId, thumbsId, msgId, fieldId, hintId, storagePrefix }) {
-    async function load(entityId) {
-      const { data, error } = await ladSupabase.from(table).select('*').eq(idField, entityId).order('sort_order');
+  function ladWireGalleryField({ table, idField, fileInputId, thumbsId, msgId, storagePrefix }) {
+    let entityId = null;
+    let pending = []; // { file, previewUrl } — fotos elegidas antes de que el producto/servicio exista
+
+    async function load(id) {
+      const { data, error } = await ladSupabase.from(table).select('*').eq(idField, id).order('sort_order');
       if (error) { console.error(error); return; }
-      render(entityId, data || []);
+      renderSaved(data || []);
     }
-    function render(entityId, images) {
+    function renderSaved(images) {
       document.getElementById(thumbsId).innerHTML = images.map(img => `
         <div style="position:relative;width:56px;height:56px;">
           <div class="ph has-photo" style="width:100%;height:100%;border-radius:var(--radius-sm);border:1px solid var(--border);background-image:url('${img.image_url.replace(/'/g, "%27")}');"></div>
@@ -319,47 +320,77 @@
         });
       });
     }
+    function renderPending() {
+      document.getElementById(thumbsId).innerHTML = pending.map((p, i) => `
+        <div style="position:relative;width:56px;height:56px;">
+          <div class="ph has-photo" style="width:100%;height:100%;border-radius:var(--radius-sm);border:1px solid var(--border);background-image:url('${p.previewUrl}');"></div>
+          <button type="button" title="Quitar" data-pending-idx="${i}" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#A94442;color:#fff;border:none;cursor:pointer;font-size:0.7rem;line-height:1;padding:0;">✕</button>
+        </div>
+      `).join('');
+      document.getElementById(thumbsId).querySelectorAll('button[data-pending-idx]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.dataset.pendingIdx);
+          URL.revokeObjectURL(pending[idx].previewUrl);
+          pending.splice(idx, 1);
+          renderPending();
+        });
+      });
+    }
     document.getElementById(fileInputId).addEventListener('change', async (e) => {
       const files = Array.from(e.target.files);
       if (!files.length) return;
-      const entityId = document.getElementById(idField === 'product_id' ? 'pId' : 'sId').value;
-      if (!entityId) return;
+      e.target.value = '';
       const msg = document.getElementById(msgId);
-      msg.style.color = '#5C7784';
-      msg.textContent = `Subiendo ${files.length} foto(s)...`;
-      try {
-        for (const file of files) {
-          const url = await ladUploadImage(file, storagePrefix);
-          const { error } = await ladSupabase.from(table).insert({ [idField]: entityId, image_url: url });
-          if (error) throw error;
+      if (entityId) {
+        msg.style.color = '#5C7784';
+        msg.textContent = `Subiendo ${files.length} foto(s)...`;
+        try {
+          for (const file of files) {
+            const url = await ladUploadImage(file, storagePrefix);
+            const { error } = await ladSupabase.from(table).insert({ [idField]: entityId, image_url: url });
+            if (error) throw error;
+          }
+          msg.style.color = '#3d8a5c';
+          msg.textContent = '¡Fotos agregadas!';
+          await load(entityId);
+        } catch (err) {
+          msg.style.color = '#A94442';
+          msg.textContent = 'Error subiendo fotos: ' + err.message;
         }
-        msg.style.color = '#3d8a5c';
-        msg.textContent = '¡Fotos agregadas!';
-        e.target.value = '';
-        await load(entityId);
-      } catch (err) {
-        msg.style.color = '#A94442';
-        msg.textContent = 'Error subiendo fotos: ' + err.message;
+      } else {
+        files.forEach(file => pending.push({ file, previewUrl: URL.createObjectURL(file) }));
+        renderPending();
       }
     });
     return {
-      showFor(entityId) {
-        document.getElementById(fieldId).style.display = 'block';
-        document.getElementById(hintId).style.display = 'none';
+      showFor(id) {
+        entityId = id;
         document.getElementById(msgId).textContent = '';
-        load(entityId);
+        load(id);
       },
-      hideForNew() {
-        document.getElementById(fieldId).style.display = 'none';
-        document.getElementById(hintId).style.display = 'block';
+      resetForNew() {
+        entityId = null;
+        pending.forEach(p => URL.revokeObjectURL(p.previewUrl));
+        pending = [];
         document.getElementById(thumbsId).innerHTML = '';
-        document.getElementById(fileInputId).value = '';
+        document.getElementById(msgId).textContent = '';
+      },
+      async flushPending(newId) {
+        if (!pending.length) return;
+        const msg = document.getElementById(msgId);
+        for (const p of pending) {
+          const url = await ladUploadImage(p.file, storagePrefix);
+          await ladSupabase.from(table).insert({ [idField]: newId, image_url: url });
+          URL.revokeObjectURL(p.previewUrl);
+        }
+        pending = [];
+        msg.textContent = '';
       }
     };
   }
 
-  const pGallery = ladWireGalleryField({ table: 'product_images', idField: 'product_id', fileInputId: 'pGalleryFile', thumbsId: 'pGalleryThumbs', msgId: 'pGalleryMsg', fieldId: 'pGalleryField', hintId: 'pGalleryHint', storagePrefix: 'products' });
-  const sGallery = ladWireGalleryField({ table: 'service_images', idField: 'service_id', fileInputId: 'sGalleryFile', thumbsId: 'sGalleryThumbs', msgId: 'sGalleryMsg', fieldId: 'sGalleryField', hintId: 'sGalleryHint', storagePrefix: 'services' });
+  const pGallery = ladWireGalleryField({ table: 'product_images', idField: 'product_id', fileInputId: 'pGalleryFile', thumbsId: 'pGalleryThumbs', msgId: 'pGalleryMsg', storagePrefix: 'products' });
+  const sGallery = ladWireGalleryField({ table: 'service_images', idField: 'service_id', fileInputId: 'sGalleryFile', thumbsId: 'sGalleryThumbs', msgId: 'sGalleryMsg', storagePrefix: 'services' });
 
   let adminProducts = [];
 
@@ -403,7 +434,7 @@
     document.getElementById('pId').value = '';
     document.getElementById('pImgMsg').textContent = '';
     ladUpdateImgPreview('pImgPreview', 'ph-1');
-    pGallery.hideForNew();
+    pGallery.resetForNew();
     openModal('productModal');
   });
 
@@ -490,15 +521,20 @@
     submitBtn.disabled = true;
 
     let error;
+    const savedId = id || (ladSlugify(data.name) + '-' + Date.now().toString(36).slice(-4));
     if (id) {
       ({ error } = await ladSupabase.from('products').update(data).eq('id', id));
     } else {
-      const newId = ladSlugify(data.name) + '-' + Date.now().toString(36).slice(-4);
-      ({ error } = await ladSupabase.from('products').insert({ id: newId, ...data }));
+      ({ error } = await ladSupabase.from('products').insert({ id: savedId, ...data }));
     }
 
+    if (error) {
+      submitBtn.disabled = false;
+      alert('No pudimos guardar el producto: ' + error.message);
+      return;
+    }
+    await pGallery.flushPending(savedId);
     submitBtn.disabled = false;
-    if (error) { alert('No pudimos guardar el producto: ' + error.message); return; }
     closeModal('productModal');
     await loadAdminProducts();
   });
@@ -634,7 +670,7 @@
     document.getElementById('sId').value = '';
     document.getElementById('sImgMsg').textContent = '';
     ladUpdateImgPreview('sImgPreview', 'ph-1');
-    sGallery.hideForNew();
+    sGallery.resetForNew();
     openModal('serviceModal');
   });
 
@@ -690,15 +726,20 @@
     submitBtn.disabled = true;
 
     let error;
+    const savedId = id || (ladSlugify(data.name) + '-' + Date.now().toString(36).slice(-4));
     if (id) {
       ({ error } = await ladSupabase.from('services').update(data).eq('id', id));
     } else {
-      const newId = ladSlugify(data.name) + '-' + Date.now().toString(36).slice(-4);
-      ({ error } = await ladSupabase.from('services').insert({ id: newId, ...data }));
+      ({ error } = await ladSupabase.from('services').insert({ id: savedId, ...data }));
     }
 
+    if (error) {
+      submitBtn.disabled = false;
+      alert('No pudimos guardar el servicio: ' + error.message);
+      return;
+    }
+    await sGallery.flushPending(savedId);
     submitBtn.disabled = false;
-    if (error) { alert('No pudimos guardar el servicio: ' + error.message); return; }
     closeModal('serviceModal');
     await loadAdminServices();
   });
