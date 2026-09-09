@@ -240,7 +240,7 @@
           <td>
             <div class="os-product">
               <div class="ph ${ladImgClass(p.img)}" style="${ladImgBg(p.img)}"></div>
-              <span>${p.name}</span>
+              <span>${p.name}${item.variant ? `<br><span style="font-size:0.8rem;color:#8199a3;">${item.variant}</span>` : ''}</span>
             </div>
           </td>
           <td style="text-align:center;">x${item.qty}</td>
@@ -320,7 +320,7 @@
     const cartProducts = await Promise.all(cart.map(item => ladGetProductById(item.id)));
     const items = cart.map((item, idx) => {
       const p = cartProducts[idx];
-      return { id: p.id, name: p.name, price: p.price, qty: item.qty };
+      return { id: p.id, name: p.name, price: p.price, qty: item.qty, variant: item.variant || null };
     });
     const provincia = document.getElementById('provinciaInfo').value;
     const shippingCost = shippingRates[provincia].price;
@@ -381,7 +381,7 @@
       return;
     }
 
-    const orderItems = items.map(i => ({ order_id: order.id, product_id: i.id, qty: i.qty, unit_price: i.price }));
+    const orderItems = items.map(i => ({ order_id: order.id, product_id: i.id, qty: i.qty, unit_price: i.price, variant: i.variant }));
     await ladSupabase.from('order_items').insert(orderItems);
 
     document.getElementById('confirmOrderNumber').textContent = 'Pedido #' + order.id;

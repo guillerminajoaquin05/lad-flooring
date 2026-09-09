@@ -17,8 +17,7 @@ function ladMapProduct(row) {
     hidden: row.hidden,
     description: row.description,
     usageInfo: row.usage_info,
-    variantGroup: row.variant_group,
-    variantLabel: row.variant_label
+    variantOptions: (row.variant_options || '').split('\n').map(v => v.trim()).filter(Boolean)
   };
 }
 
@@ -37,13 +36,6 @@ async function ladGetProductById(id) {
   const { data, error } = await ladSupabase.from('products').select('*').eq('id', id).single();
   if (error) { console.error('[Lad Flooring] Error cargando producto:', error.message); return null; }
   return ladMapProduct(data);
-}
-
-async function ladGetProductVariants(variantGroup) {
-  if (!ladSupabase || !variantGroup) return [];
-  const { data, error } = await ladSupabase.from('products').select('id, name, variant_label').eq('variant_group', variantGroup).eq('hidden', false).order('variant_label');
-  if (error) { console.error('[Lad Flooring] Error cargando variantes:', error.message); return []; }
-  return data;
 }
 
 async function ladGetProductImages(productId) {

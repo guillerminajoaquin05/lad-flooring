@@ -164,21 +164,26 @@
     document.getElementById('cartItemsBody').innerHTML = cart.map((item, idx) => {
       const p = products[idx];
       if (!p) return '';
+      const v = item.variant ? item.variant.replace(/'/g, "\\'") : null;
+      const vArg = v ? `'${v}'` : 'null';
       return `
         <tr>
-          <td><button class="cart-row-remove" onclick="ladRemoveFromCart('${p.id}'); renderCart();" title="Quitar">✕</button></td>
+          <td><button class="cart-row-remove" onclick="ladRemoveFromCart('${p.id}', ${vArg}); renderCart();" title="Quitar">✕</button></td>
           <td>
             <div class="cart-product-cell">
               <div class="ph ${ladImgClass(p.img)}" style="${ladImgBg(p.img)}"></div>
-              <a href="producto.html?id=${p.id}">${p.name}</a>
+              <div>
+                <a href="producto.html?id=${p.id}">${p.name}</a>
+                ${item.variant ? `<div style="font-size:0.8rem;color:#8199a3;">${item.variant}</div>` : ''}
+              </div>
             </div>
           </td>
           <td>${ladFormatPrice(p.price)}</td>
           <td>
             <div class="qty-box">
-              <button type="button" onclick="ladUpdateQty('${p.id}', ${item.qty - 1}); renderCart();">−</button>
+              <button type="button" onclick="ladUpdateQty('${p.id}', ${item.qty - 1}, ${vArg}); renderCart();">−</button>
               <input type="text" value="${item.qty}" readonly>
-              <button type="button" onclick="ladUpdateQty('${p.id}', ${item.qty + 1}); renderCart();">+</button>
+              <button type="button" onclick="ladUpdateQty('${p.id}', ${item.qty + 1}, ${vArg}); renderCart();">+</button>
             </div>
           </td>
           <td style="font-weight:600;">${ladFormatPrice(p.price * item.qty)}</td>

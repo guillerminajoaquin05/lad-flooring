@@ -14,30 +14,30 @@ function ladSaveCart(cart) {
   ladUpdateCartBadge();
 }
 
-function ladAddToCart(productId, qty = 1) {
+function ladAddToCart(productId, qty = 1, variant = null) {
   const cart = ladGetCart();
-  const item = cart.find(i => i.id === productId);
+  const item = cart.find(i => i.id === productId && (i.variant || null) === (variant || null));
   if (item) {
     item.qty += qty;
   } else {
-    cart.push({ id: productId, qty });
+    cart.push(variant ? { id: productId, qty, variant } : { id: productId, qty });
   }
   ladSaveCart(cart);
 }
 
-function ladUpdateQty(productId, qty) {
+function ladUpdateQty(productId, qty, variant = null) {
   let cart = ladGetCart();
   if (qty <= 0) {
-    cart = cart.filter(i => i.id !== productId);
+    cart = cart.filter(i => !(i.id === productId && (i.variant || null) === (variant || null)));
   } else {
-    const item = cart.find(i => i.id === productId);
+    const item = cart.find(i => i.id === productId && (i.variant || null) === (variant || null));
     if (item) item.qty = qty;
   }
   ladSaveCart(cart);
 }
 
-function ladRemoveFromCart(productId) {
-  ladUpdateQty(productId, 0);
+function ladRemoveFromCart(productId, variant = null) {
+  ladUpdateQty(productId, 0, variant);
 }
 
 function ladCartCount() {

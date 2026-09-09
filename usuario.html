@@ -84,7 +84,7 @@
     }
     const { data: orders, error } = await ladSupabase
       .from('orders')
-      .select('id, created_at, order_status, total, order_items(qty, unit_price, products(name, image_url))')
+      .select('id, created_at, order_status, total, order_items(qty, unit_price, variant, products(name, image_url))')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -105,7 +105,7 @@
         ${o.order_items.map(item => `
           <div class="order-item">
             <div class="ph ${item.products ? ladImgClass(item.products.image_url) : 'ph-1'}" style="${item.products ? ladImgBg(item.products.image_url) : ''}"></div>
-            <div style="flex:1;">${item.products ? item.products.name : 'Producto'} × ${item.qty}</div>
+            <div style="flex:1;">${item.products ? item.products.name : 'Producto'}${item.variant ? ` <span style="color:#8199a3;font-size:0.85rem;">(${item.variant})</span>` : ''} × ${item.qty}</div>
           </div>`).join('')}
         <div class="flex-between" style="margin-top:10px;">
           <strong>Total: ${ladFormatPrice(o.total)}</strong>

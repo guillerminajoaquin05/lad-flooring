@@ -76,6 +76,7 @@ Deno.serve(async (req) => {
       product_id: i.id,
       qty: i.qty,
       unit_price: i.price,
+      variant: i.variant || null,
     }));
     const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
     if (itemsError) throw itemsError;
@@ -91,7 +92,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         items: items.map((i: any) => ({
-          title: i.name,
+          title: i.variant ? `${i.name} (${i.variant})` : i.name,
           quantity: i.qty,
           unit_price: i.price,
           currency_id: 'ARS',
