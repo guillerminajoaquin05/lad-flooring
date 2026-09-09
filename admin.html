@@ -133,6 +133,17 @@
         <div class="field"><label>Precio</label><input type="number" id="pPrice" required></div>
         <div class="field"><label>Stock</label><input type="number" id="pStock" required></div>
       </div>
+      <div class="grid grid-2" style="gap:16px;">
+        <div class="field">
+          <label>Grupo de variantes (opcional)</label>
+          <input type="text" id="pVariantGroup" placeholder="Ej: bona-spray-mop">
+        </div>
+        <div class="field">
+          <label>Etiqueta de esta variante</label>
+          <input type="text" id="pVariantLabel" placeholder="Ej: Madera">
+        </div>
+      </div>
+      <p style="font-size:0.78rem;color:#8199a3;margin-top:-10px;">Los productos que compartan el mismo "Grupo de variantes" aparecen como fichas para elegir entre sí en la ficha del producto (ej: Madera / Vinílico / Aceitado).</p>
       <div class="field">
         <label>Imagen del producto</label>
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
@@ -411,6 +422,8 @@
     document.getElementById('pCategory').value = p.category;
     document.getElementById('pPrice').value = p.price;
     document.getElementById('pStock').value = p.stock;
+    document.getElementById('pVariantGroup').value = p.variantGroup || '';
+    document.getElementById('pVariantLabel').value = p.variantLabel || '';
     document.getElementById('pImg').value = p.img;
     document.getElementById('pImgPlaceholder').value = ladIsImageUrl(p.img) ? 'ph-1' : p.img;
     document.getElementById('pImgFile').value = '';
@@ -473,6 +486,8 @@
       category: document.getElementById('pCategory').value || 'General',
       price: parseFloat(document.getElementById('pPrice').value),
       stock: parseInt(document.getElementById('pStock').value),
+      variant_group: document.getElementById('pVariantGroup').value.trim() || null,
+      variant_label: document.getElementById('pVariantLabel').value.trim() || null,
       image_url: document.getElementById('pImg').value,
       description: document.getElementById('pDescription').value,
       usage_info: document.getElementById('pUsageInfo').value || null,

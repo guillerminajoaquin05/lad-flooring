@@ -55,6 +55,15 @@
   document.title = product.name + ' — Lad Flooring';
   document.getElementById('crumbName').textContent = product.name;
 
+  const variants = product.variantGroup ? await ladGetProductVariants(product.variantGroup) : [];
+  const variantsHTML = variants.length > 1 ? `
+    <div style="margin:14px 0 20px;">
+      <label style="display:block;font-size:0.85rem;margin-bottom:8px;color:var(--navy);">Tipo de piso</label>
+      <div class="pill-options">
+        ${variants.map(v => `<a href="producto.html?id=${v.id}" class="pill-option ${v.id === product.id ? 'selected' : ''}">${v.variant_label || v.name}</a>`).join('')}
+      </div>
+    </div>` : '';
+
   document.getElementById('productDetail').innerHTML = `
     <div>
       <div class="ph ${ladImgClass(product.img)}" id="mainImage" style="height:460px;border-radius:var(--radius-lg);${ladImgBg(product.img)}">
@@ -71,6 +80,7 @@
         ${product.line === 'flotantes' ? '<span style="color:#8199a3;font-size:0.9rem;"> / m²</span>' : ''}
       </div>
       <p>${product.description}</p>
+      ${variantsHTML}
       <p style="font-size:0.88rem;color:${product.stock > 0 ? '#3d8a5c' : '#A94442'};">
         ${product.stock > 0 ? `✓ Stock disponible (${product.stock} unidades)` : '✕ Sin stock'}
       </p>
