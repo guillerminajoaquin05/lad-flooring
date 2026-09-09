@@ -36,3 +36,10 @@ async function ladGetProductById(id) {
   if (error) { console.error('[Lad Flooring] Error cargando producto:', error.message); return null; }
   return ladMapProduct(data);
 }
+
+async function ladGetProductImages(productId) {
+  if (!ladSupabase) return [];
+  const { data, error } = await ladSupabase.from('product_images').select('*').eq('product_id', productId).order('sort_order');
+  if (error) { console.error('[Lad Flooring] Error cargando galería del producto:', error.message); return []; }
+  return data;
+}

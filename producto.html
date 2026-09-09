@@ -56,8 +56,11 @@
   document.getElementById('crumbName').textContent = product.name;
 
   document.getElementById('productDetail').innerHTML = `
-    <div class="ph ${ladImgClass(product.img)}" style="height:460px;border-radius:var(--radius-lg);${ladImgBg(product.img)}">
-      ${ladIsImageUrl(product.img) ? '' : `<span class="ph-tag">Foto: ${product.name.toLowerCase()}</span>`}
+    <div>
+      <div class="ph ${ladImgClass(product.img)}" id="mainImage" style="height:460px;border-radius:var(--radius-lg);${ladImgBg(product.img)}">
+        ${ladIsImageUrl(product.img) ? '' : `<span class="ph-tag">Foto: ${product.name.toLowerCase()}</span>`}
+      </div>
+      <div class="gallery-thumbs" id="galleryThumbs" style="display:none;"></div>
     </div>
     <div>
       <span class="badge badge-outline">${product.category}</span>
@@ -88,6 +91,25 @@
     const usageItems = product.usageInfo.split('\n').map(v => v.trim()).filter(Boolean);
     document.getElementById('usageInfoText').innerHTML = `<ul class="includes-list">${usageItems.map(i => `<li>${i}</li>`).join('')}</ul>`;
     document.getElementById('usageInfoSection').style.display = 'block';
+  }
+
+  const galleryRows = await ladGetProductImages(product.id);
+  const galleryPhotos = [{ image_url: product.img }, ...galleryRows].filter(g => ladIsImageUrl(g.image_url));
+  if (galleryPhotos.length > 1) {
+    const galleryMount = document.getElementById('galleryThumbs');
+    galleryMount.style.display = 'flex';
+    galleryMount.innerHTML = galleryPhotos.map((g, i) => `
+      <div class="gallery-thumb ${i === 0 ? 'active' : ''}" style="background-image:url('${g.image_url.replace(/'/g, "%27")}');" data-url="${g.image_url}"></div>
+    `).join('');
+    galleryMount.querySelectorAll('.gallery-thumb').forEach(thumb => {
+      thumb.addEventListener('click', () => {
+        galleryMount.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+        thumb.classList.add('active');
+        const mainImg = document.getElementById('mainImage');
+        mainImg.className = 'ph has-photo';
+        mainImg.style.backgroundImage = `url('${thumb.dataset.url}')`;
+      });
+    });
   }
 
   document.getElementById('qtyMinus').addEventListener('click', () => {

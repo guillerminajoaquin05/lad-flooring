@@ -57,8 +57,11 @@
   document.getElementById('crumbName').textContent = service.name;
 
   document.getElementById('serviceDetail').innerHTML = `
-    <div class="ph ${ladImgClass(service.img)}" style="height:420px;border-radius:var(--radius-lg);${ladImgBg(service.img)}">
-      ${ladIsImageUrl(service.img) ? '' : `<span class="ph-tag">Foto: ${service.name.toLowerCase()}</span>`}
+    <div>
+      <div class="ph ${ladImgClass(service.img)}" id="mainImage" style="height:420px;border-radius:var(--radius-lg);${ladImgBg(service.img)}">
+        ${ladIsImageUrl(service.img) ? '' : `<span class="ph-tag">Foto: ${service.name.toLowerCase()}</span>`}
+      </div>
+      <div class="gallery-thumbs" id="galleryThumbs" style="display:none;"></div>
     </div>
     <div>
       <span class="badge badge-outline">${service.category}</span>
@@ -77,6 +80,25 @@
     const usageItems = service.usageInfo.split('\n').map(v => v.trim()).filter(Boolean);
     document.getElementById('usageInfoText').innerHTML = `<ul class="includes-list">${usageItems.map(i => `<li>${i}</li>`).join('')}</ul>`;
     document.getElementById('usageInfoSection').style.display = 'block';
+  }
+
+  const galleryRows = await ladGetServiceImages(service.id);
+  const galleryPhotos = [{ image_url: service.img }, ...galleryRows].filter(g => ladIsImageUrl(g.image_url));
+  if (galleryPhotos.length > 1) {
+    const galleryMount = document.getElementById('galleryThumbs');
+    galleryMount.style.display = 'flex';
+    galleryMount.innerHTML = galleryPhotos.map((g, i) => `
+      <div class="gallery-thumb ${i === 0 ? 'active' : ''}" style="background-image:url('${g.image_url.replace(/'/g, "%27")}');" data-url="${g.image_url}"></div>
+    `).join('');
+    galleryMount.querySelectorAll('.gallery-thumb').forEach(thumb => {
+      thumb.addEventListener('click', () => {
+        galleryMount.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+        thumb.classList.add('active');
+        const mainImg = document.getElementById('mainImage');
+        mainImg.className = 'ph has-photo';
+        mainImg.style.backgroundImage = `url('${thumb.dataset.url}')`;
+      });
+    });
   }
 
   const allServices = await ladGetServices();

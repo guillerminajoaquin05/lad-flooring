@@ -152,6 +152,13 @@
         </select>
         <input type="hidden" id="pImg" value="ph-1">
       </div>
+      <div class="field" id="pGalleryField" style="display:none;">
+        <label>Fotos adicionales (galería)</label>
+        <div id="pGalleryThumbs" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;"></div>
+        <input type="file" id="pGalleryFile" accept="image/*" multiple>
+        <div id="pGalleryMsg" style="font-size:0.78rem;color:#8199a3;margin-top:4px;"></div>
+      </div>
+      <p id="pGalleryHint" style="font-size:0.82rem;color:#8199a3;">Guardá el producto para poder agregar fotos adicionales a la galería.</p>
       <div class="field"><label>Descripción</label><textarea id="pDescription" rows="3"></textarea></div>
       <div class="field"><label>Modo de uso y recomendaciones (opcional, un punto por línea)</label><textarea id="pUsageInfo" rows="4" placeholder="Un ítem por renglón, ej:&#10;Apto para pisos de madera barnizados y corcho&#10;Tiempo de secado: 15-20 minutos"></textarea></div>
       <div class="checkbox-row" style="margin-bottom:20px;"><input type="checkbox" id="pHidden"> Ocultar producto en la tienda</div>
@@ -194,6 +201,13 @@
         </select>
         <input type="hidden" id="sImg" value="ph-1">
       </div>
+      <div class="field" id="sGalleryField" style="display:none;">
+        <label>Fotos adicionales (galería)</label>
+        <div id="sGalleryThumbs" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;"></div>
+        <input type="file" id="sGalleryFile" accept="image/*" multiple>
+        <div id="sGalleryMsg" style="font-size:0.78rem;color:#8199a3;margin-top:4px;"></div>
+      </div>
+      <p id="sGalleryHint" style="font-size:0.82rem;color:#8199a3;">Guardá el servicio para poder agregar fotos adicionales a la galería.</p>
       <div class="field"><label>Descripción corta (para la grilla de Servicios)</label><textarea id="sShortDescription" rows="2" required></textarea></div>
       <div class="field"><label>Descripción completa (para la ficha del servicio)</label><textarea id="sDescription" rows="4" required></textarea></div>
       <div class="field"><label>¿Qué incluye? (un punto por línea)</label><textarea id="sIncludes" rows="4" placeholder="Un ítem por renglón"></textarea></div>
@@ -270,6 +284,78 @@
   ladWireImageField({ fileInputId: 'pImgFile', hiddenInputId: 'pImg', placeholderSelectId: 'pImgPlaceholder', previewId: 'pImgPreview', msgId: 'pImgMsg', storagePrefix: 'products' });
   ladWireImageField({ fileInputId: 'sImgFile', hiddenInputId: 'sImg', placeholderSelectId: 'sImgPlaceholder', previewId: 'sImgPreview', msgId: 'sImgMsg', storagePrefix: 'services' });
 
+  function ladGalleryStoragePath(imageUrl) {
+    const marker = '/product-images/';
+    const idx = imageUrl.indexOf(marker);
+    return idx === -1 ? null : imageUrl.slice(idx + marker.length);
+  }
+
+  function ladWireGalleryField({ table, idField, fileInputId, thumbsId, msgId, fieldId, hintId, storagePrefix }) {
+    async function load(entityId) {
+      const { data, error } = await ladSupabase.from(table).select('*').eq(idField, entityId).order('sort_order');
+      if (error) { console.error(error); return; }
+      render(entityId, data || []);
+    }
+    function render(entityId, images) {
+      document.getElementById(thumbsId).innerHTML = images.map(img => `
+        <div style="position:relative;width:56px;height:56px;">
+          <div class="ph has-photo" style="width:100%;height:100%;border-radius:var(--radius-sm);border:1px solid var(--border);background-image:url('${img.image_url.replace(/'/g, "%27")}');"></div>
+          <button type="button" title="Eliminar" data-img-id="${img.id}" data-img-url="${img.image_url}" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#A94442;color:#fff;border:none;cursor:pointer;font-size:0.7rem;line-height:1;padding:0;">✕</button>
+        </div>
+      `).join('');
+      document.getElementById(thumbsId).querySelectorAll('button[data-img-id]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('¿Eliminar esta foto de la galería?')) return;
+          const path = ladGalleryStoragePath(btn.dataset.imgUrl);
+          if (path) await ladSupabase.storage.from('product-images').remove([path]);
+          const { error } = await ladSupabase.from(table).delete().eq('id', btn.dataset.imgId);
+          if (error) { alert('No pudimos eliminar la foto: ' + error.message); return; }
+          await load(entityId);
+        });
+      });
+    }
+    document.getElementById(fileInputId).addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files);
+      if (!files.length) return;
+      const entityId = document.getElementById(idField === 'product_id' ? 'pId' : 'sId').value;
+      if (!entityId) return;
+      const msg = document.getElementById(msgId);
+      msg.style.color = '#5C7784';
+      msg.textContent = `Subiendo ${files.length} foto(s)...`;
+      try {
+        for (const file of files) {
+          const url = await ladUploadImage(file, storagePrefix);
+          const { error } = await ladSupabase.from(table).insert({ [idField]: entityId, image_url: url });
+          if (error) throw error;
+        }
+        msg.style.color = '#3d8a5c';
+        msg.textContent = '¡Fotos agregadas!';
+        e.target.value = '';
+        await load(entityId);
+      } catch (err) {
+        msg.style.color = '#A94442';
+        msg.textContent = 'Error subiendo fotos: ' + err.message;
+      }
+    });
+    return {
+      showFor(entityId) {
+        document.getElementById(fieldId).style.display = 'block';
+        document.getElementById(hintId).style.display = 'none';
+        document.getElementById(msgId).textContent = '';
+        load(entityId);
+      },
+      hideForNew() {
+        document.getElementById(fieldId).style.display = 'none';
+        document.getElementById(hintId).style.display = 'block';
+        document.getElementById(thumbsId).innerHTML = '';
+        document.getElementById(fileInputId).value = '';
+      }
+    };
+  }
+
+  const pGallery = ladWireGalleryField({ table: 'product_images', idField: 'product_id', fileInputId: 'pGalleryFile', thumbsId: 'pGalleryThumbs', msgId: 'pGalleryMsg', fieldId: 'pGalleryField', hintId: 'pGalleryHint', storagePrefix: 'products' });
+  const sGallery = ladWireGalleryField({ table: 'service_images', idField: 'service_id', fileInputId: 'sGalleryFile', thumbsId: 'sGalleryThumbs', msgId: 'sGalleryMsg', fieldId: 'sGalleryField', hintId: 'sGalleryHint', storagePrefix: 'services' });
+
   let adminProducts = [];
 
   async function loadAdminProducts() {
@@ -312,6 +398,7 @@
     document.getElementById('pId').value = '';
     document.getElementById('pImgMsg').textContent = '';
     ladUpdateImgPreview('pImgPreview', 'ph-1');
+    pGallery.hideForNew();
     openModal('productModal');
   });
 
@@ -331,6 +418,7 @@
     ladUpdateImgPreview('pImgPreview', p.img);
     document.getElementById('pDescription').value = p.description;
     document.getElementById('pUsageInfo').value = p.usageInfo || '';
+    pGallery.showFor(p.id);
     document.getElementById('pHidden').checked = p.hidden;
     openModal('productModal');
   }
@@ -539,6 +627,7 @@
     document.getElementById('sId').value = '';
     document.getElementById('sImgMsg').textContent = '';
     ladUpdateImgPreview('sImgPreview', 'ph-1');
+    sGallery.hideForNew();
     openModal('serviceModal');
   });
 
@@ -554,6 +643,7 @@
     document.getElementById('sImgMsg').textContent = '';
     ladUpdateImgPreview('sImgPreview', s.img);
     document.getElementById('sShortDescription').value = s.shortDescription;
+    sGallery.showFor(s.id);
     document.getElementById('sDescription').value = s.description;
     document.getElementById('sIncludes').value = (s.includes || []).join('\n');
     document.getElementById('sUsageInfo').value = s.usageInfo || '';

@@ -29,3 +29,10 @@ async function ladGetServiceById(id) {
   if (error) { console.error('[Lad Flooring] Error cargando servicio:', error.message); return null; }
   return ladMapService(data);
 }
+
+async function ladGetServiceImages(serviceId) {
+  if (!ladSupabase) return [];
+  const { data, error } = await ladSupabase.from('service_images').select('*').eq('service_id', serviceId).order('sort_order');
+  if (error) { console.error('[Lad Flooring] Error cargando galería del servicio:', error.message); return []; }
+  return data;
+}
