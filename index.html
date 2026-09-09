@@ -152,10 +152,10 @@
     products.slice(0, 4).forEach(p => {
       wrap.innerHTML += `
         <div class="card">
-          <a href="producto.html?id=${p.id}"><div class="card-img ph ${p.img}"></div></a>
+          <a href="producto.html?id=${p.id}"><div class="card-img ph ${ladImgClass(p.img)}" style="${ladImgBg(p.img)}"></div></a>
           <div class="card-body">
             <span class="badge badge-outline">${p.category}</span>
-            <h3 style="margin-top:8px;"><a href="producto.html?id=${p.id}">${p.name}</a></h3>
+            <h3 style="margin-top:8px;color:var(--navy);"><a href="producto.html?id=${p.id}">${p.name}</a></h3>
           </div>
           <div class="card-footer">
             <span class="price">${ladFormatPrice(p.price)}</span>
