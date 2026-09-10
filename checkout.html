@@ -383,6 +383,7 @@
 
     const orderItems = items.map(i => ({ order_id: order.id, product_id: i.id, qty: i.qty, unit_price: i.price, variant: i.variant }));
     await ladSupabase.from('order_items').insert(orderItems);
+    ladSupabase.functions.invoke('send-order-confirmation', { body: { orderId: order.id } }).catch(() => {});
 
     document.getElementById('confirmOrderNumber').textContent = 'Pedido #' + order.id;
     document.getElementById('confirmPayNote').textContent = 'Tu pedido quedó registrado y pendiente de aprobación. Apenas confirmemos la acreditación de tu transferencia, te avisamos por email y habilitamos el pedido.';

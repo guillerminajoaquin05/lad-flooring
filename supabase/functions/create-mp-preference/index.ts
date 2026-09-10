@@ -117,6 +117,13 @@ Deno.serve(async (req) => {
       throw new Error(preference.message || 'Error creando la preferencia de Mercado Pago');
     }
 
+    // Mandamos el email de confirmación (no bloqueamos la respuesta si falla)
+    fetch(`${SUPABASE_URL}/functions/v1/send-order-confirmation`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId: order.id }),
+    }).catch((e) => console.error('Error invocando send-order-confirmation:', e));
+
     return json({ init_point: preference.init_point, order_id: order.id });
   } catch (err) {
     console.error(err);
