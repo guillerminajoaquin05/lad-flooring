@@ -26,6 +26,10 @@ Deno.serve(async (req) => {
       headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
     });
     const payment = await mpRes.json();
+    if (!mpRes.ok) {
+      console.error('Error consultando el pago en Mercado Pago:', payment);
+      return new Response('error consultando el pago', { status: 200 });
+    }
 
     const orderId = payment.external_reference;
     if (!orderId) return new Response('ok', { status: 200 });
@@ -34,8 +38,20 @@ Deno.serve(async (req) => {
     if (payment.status === 'approved') paymentStatus = 'aprobado';
     else if (payment.status === 'rejected' || payment.status === 'cancelled') paymentStatus = 'rechazado';
 
+    console.log(`Actualizando pedido ${orderId} a payment_status=${paymentStatus} (payment ${paymentId}, status MP=${payment.status})`);
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    await supabase.from('orders').update({ payment_status: paymentStatus }).eq('id', orderId);
+    const { data: updated, error: updateError } = await supabase
+      .from('orders')
+      .update({ payment_status: paymentStatus })
+      .eq('id', orderId)
+      .select();
+
+    if (updateError) {
+      console.error('Error actualizando el pedido:', updateError);
+    } else {
+      console.log('Filas actualizadas:', updated?.length ?? 0, JSON.stringify(updated));
+    }
 
     return new Response('ok', { status: 200 });
   } catch (err) {
