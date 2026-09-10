@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 90" fill="none">
   <g>
-    <polygon points="6,46 34,18 44,18 16,46" fill="#82A6B3"/>
-    <polygon points="6,60 34,32 44,32 16,60" fill="#F1ECE0"/>
-    <polygon points="6,74 34,46 44,46 16,74" fill="#82A6B3"/>
+    <polygon points="6,44 34,16 44,16 16,44" fill="#82A6B3"/>
+    <polygon points="6,54 34,26 44,26 16,54" fill="#F1ECE0"/>
+    <polygon points="6,64 34,36 44,36 16,64" fill="#82A6B3"/>
+    <polygon points="6,74 34,46 44,46 16,74" fill="#F1ECE0"/>
   </g>
   <text x="66" y="42" font-family="'Georgia Pro','Georgia',serif" font-size="30" letter-spacing="6" fill="#F1ECE0">LAD</text>
   <text x="66" y="63" font-family="'Georgia Pro','Georgia',serif" font-size="17" letter-spacing="3" fill="#F1ECE0">FLOORING</text>

@@ -95,7 +95,7 @@
 </section>
 
 <section class="section bg-cream">
-  <div class="container grid grid-2" style="align-items:center;">
+  <div class="container grid grid-2" style="align-items:start;">
     <div class="media-stack">
       <div class="ph ph-1" style="height:380px;border-radius:var(--radius-lg);">
         <span class="ph-tag" style="bottom:auto;top:16px;">Foto: equipo Lad Flooring en obra</span>
@@ -148,8 +148,9 @@
   // Productos destacados
   document.addEventListener('DOMContentLoaded', async () => {
     const wrap = document.getElementById('homeProducts');
-    const products = await ladGetProducts();
-    products.slice(0, 4).forEach(p => {
+    const featuredIds = ['spray-mop-9qfj', 'mopa-microfibra-repuesto-original-bona-57tt', 'wood-floor-cleaner-spray-1l-74ic', 'stone-tile-cleaner-vinilico-spray-manual-1-06l-rwvx'];
+    const products = (await Promise.all(featuredIds.map(id => ladGetProductById(id)))).filter(Boolean);
+    products.forEach(p => {
       wrap.innerHTML += `
         <div class="card">
           <a href="producto.html?id=${p.id}"><div class="card-img ph ${ladImgClass(p.img)}" style="${ladImgBg(p.img)}"></div></a>
