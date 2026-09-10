@@ -148,7 +148,7 @@
   // Productos destacados
   document.addEventListener('DOMContentLoaded', async () => {
     const wrap = document.getElementById('homeProducts');
-    const featuredIds = ['spray-mop-9qfj', 'mopa-microfibra-repuesto-original-bona-57tt', 'wood-floor-cleaner-spray-1l-74ic', 'stone-tile-cleaner-vinilico-spray-manual-1-06l-rwvx'];
+    const featuredIds = ['spray-mop-9qfj', 'mopa-microfibra-repuesto-original-bona-57tt', 'wood-floor-cartucho-cleaner-madera-850ml-29vv', 'stone-tile-cartucho-cleaner-vinilico-1l-9bfe'];
     const products = (await Promise.all(featuredIds.map(id => ladGetProductById(id)))).filter(Boolean);
     products.forEach(p => {
       wrap.innerHTML += `
