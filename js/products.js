@@ -23,17 +23,33 @@ function ladMapProduct(row) {
   };
 }
 
+/* La familia "Spray Mop" (mopa + repuestos/accesorios) va siempre primero en
+   la tienda; el resto de las familias se ordena alfabéticamente detrás. */
+const LAD_FEATURED_FAMILY = 'spray mop';
+
 async function ladGetProducts({ line, tier, includeHidden = false } = {}) {
   if (!ladSupabase) { console.warn('[Lad Flooring] Supabase no conectado — ladGetProducts() devuelve []'); return []; }
-  let query = ladSupabase.from('products').select('*')
-    .order('family', { ascending: true, nullsFirst: false })
-    .order('name');
+  let query = ladSupabase.from('products').select('*');
   if (!includeHidden) query = query.eq('hidden', false);
   if (line && line !== 'todos') query = query.eq('line', line);
   if (tier && tier !== 'todos') query = query.eq('usage_tier', tier);
   const { data, error } = await query;
   if (error) { console.error('[Lad Flooring] Error cargando productos:', error.message); return []; }
-  return data.map(ladMapProduct);
+  const products = data.map(ladMapProduct);
+  products.sort((a, b) => {
+    const af = (a.family || '').toLowerCase();
+    const bf = (b.family || '').toLowerCase();
+    const aFeatured = af.includes(LAD_FEATURED_FAMILY) ? 0 : 1;
+    const bFeatured = bf.includes(LAD_FEATURED_FAMILY) ? 0 : 1;
+    if (aFeatured !== bFeatured) return aFeatured - bFeatured;
+    if (af !== bf) {
+      if (!af) return 1;
+      if (!bf) return -1;
+      return af.localeCompare(bf);
+    }
+    return a.name.localeCompare(b.name);
+  });
+  return products;
 }
 
 async function ladGetProductById(id) {
