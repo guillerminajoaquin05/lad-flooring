@@ -43,6 +43,7 @@
       <button data-tab="pedidos" class="active">Pedidos</button>
       <button data-tab="productos">Productos</button>
       <button data-tab="servicios">Servicios</button>
+      <button data-tab="faqs">FAQs</button>
     </div>
 
     <div id="tabAdminPedidos">
@@ -107,6 +108,26 @@
             </tr>
           </thead>
           <tbody id="adminServicesTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tabAdminFaqs" style="display:none;">
+      <div class="flex-between" style="margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+        <h3 class="mt-0">Preguntas Frecuentes</h3>
+        <button class="btn btn-primary" id="btnNuevoFaq">+ Agregar pregunta</button>
+      </div>
+      <div class="admin-table-wrap" style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Orden</th>
+              <th>Pregunta</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="adminFaqsTbody"></tbody>
         </table>
       </div>
     </div>
@@ -233,6 +254,22 @@
   </div>
 </div>
 
+<!-- Modal: alta / edición de FAQ -->
+<div class="modal-overlay" id="faqModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('faqModal')">✕</button>
+    <h3 id="faqModalTitle">Agregar pregunta</h3>
+    <form id="faqForm">
+      <input type="hidden" id="fId">
+      <div class="field"><label>Pregunta</label><input type="text" id="fQuestion" required></div>
+      <div class="field"><label>Respuesta</label><textarea id="fAnswer" rows="4" required></textarea></div>
+      <div class="field"><label>Orden (las de menor número aparecen primero)</label><input type="number" id="fSortOrder" value="0"></div>
+      <div class="checkbox-row" style="margin-bottom:20px;"><input type="checkbox" id="fHidden"> Ocultar en la página de FAQs</div>
+      <button type="submit" class="btn btn-primary btn-block">Guardar pregunta</button>
+    </form>
+  </div>
+</div>
+
 <!-- Modal: compradores -->
 <div class="modal-overlay" id="buyersModal">
   <div class="modal-box">
@@ -246,6 +283,7 @@
 <script src="js/supabase-config.js"></script>
 <script src="js/products.js"></script>
 <script src="js/services.js"></script>
+<script src="js/faqs.js"></script>
 <script src="js/cart.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/common.js"></script>
@@ -566,6 +604,7 @@
       document.getElementById('tabAdminPedidos').style.display = btn.dataset.tab === 'pedidos' ? 'block' : 'none';
       document.getElementById('tabAdminProductos').style.display = btn.dataset.tab === 'productos' ? 'block' : 'none';
       document.getElementById('tabAdminServicios').style.display = btn.dataset.tab === 'servicios' ? 'block' : 'none';
+      document.getElementById('tabAdminFaqs').style.display = btn.dataset.tab === 'faqs' ? 'block' : 'none';
     });
   });
 
@@ -759,6 +798,96 @@
     await loadAdminServices();
   });
 
+  // ---------- FAQs ----------
+  let adminFaqs = [];
+
+  async function loadAdminFaqs() {
+    const { data, error } = await ladSupabase
+      .from('faqs')
+      .select('*')
+      .order('sort_order')
+      .order('id');
+    if (error) { alert('No pudimos cargar las FAQs: ' + error.message); return; }
+    adminFaqs = data.map(ladMapFaq);
+    renderAdminFaqsTable();
+  }
+
+  function renderAdminFaqsTable() {
+    document.getElementById('adminFaqsTbody').innerHTML = adminFaqs.map(f => `
+      <tr>
+        <td>${f.sortOrder}</td>
+        <td>${f.question}</td>
+        <td><span class="status-dot ${f.hidden ? 'hidden-status' : ''}">${f.hidden ? 'Oculta' : 'Visible'}</span></td>
+        <td>
+          <div class="row-actions">
+            <button onclick="editFaq('${f.id}')">Editar</button>
+            <button onclick="toggleFaqHidden('${f.id}')">${f.hidden ? 'Mostrar' : 'Ocultar'}</button>
+            <button onclick="deleteFaq('${f.id}')" style="color:#A94442;">Eliminar</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  document.getElementById('btnNuevoFaq').addEventListener('click', () => {
+    document.getElementById('faqModalTitle').textContent = 'Agregar pregunta';
+    document.getElementById('faqForm').reset();
+    document.getElementById('fId').value = '';
+    document.getElementById('fSortOrder').value = 0;
+    openModal('faqModal');
+  });
+
+  function editFaq(id) {
+    const f = adminFaqs.find(x => String(x.id) === String(id));
+    document.getElementById('faqModalTitle').textContent = 'Editar pregunta';
+    document.getElementById('fId').value = f.id;
+    document.getElementById('fQuestion').value = f.question;
+    document.getElementById('fAnswer').value = f.answer;
+    document.getElementById('fSortOrder').value = f.sortOrder;
+    document.getElementById('fHidden').checked = f.hidden;
+    openModal('faqModal');
+  }
+
+  async function toggleFaqHidden(id) {
+    const f = adminFaqs.find(x => String(x.id) === String(id));
+    const { error } = await ladSupabase.from('faqs').update({ hidden: !f.hidden }).eq('id', id);
+    if (error) { alert('No pudimos actualizar la pregunta: ' + error.message); return; }
+    await loadAdminFaqs();
+  }
+
+  async function deleteFaq(id) {
+    if (!confirm('¿Eliminar esta pregunta? Esta acción no se puede deshacer.')) return;
+    const { error } = await ladSupabase.from('faqs').delete().eq('id', id);
+    if (error) { alert('No pudimos eliminar la pregunta: ' + error.message); return; }
+    await loadAdminFaqs();
+  }
+
+  document.getElementById('faqForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('fId').value;
+    const data = {
+      question: document.getElementById('fQuestion').value,
+      answer: document.getElementById('fAnswer').value,
+      sort_order: parseInt(document.getElementById('fSortOrder').value) || 0,
+      hidden: document.getElementById('fHidden').checked
+    };
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+
+    let error;
+    if (id) {
+      ({ error } = await ladSupabase.from('faqs').update(data).eq('id', id));
+    } else {
+      ({ error } = await ladSupabase.from('faqs').insert(data));
+    }
+
+    submitBtn.disabled = false;
+    if (error) { alert('No pudimos guardar la pregunta: ' + error.message); return; }
+    closeModal('faqModal');
+    await loadAdminFaqs();
+  });
+
   (async function guardAdmin() {
     if (!(await ladIsLoggedIn())) {
       window.location.href = 'login.html?redirect=' + encodeURIComponent('admin.html');
@@ -773,6 +902,7 @@
     loadAdminOrders();
     loadAdminProducts();
     loadAdminServices();
+    loadAdminFaqs();
   })();
 </script>
 </body>
