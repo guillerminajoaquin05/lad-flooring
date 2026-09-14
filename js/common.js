@@ -24,12 +24,12 @@ const NAV_LINKS = [
 
 /* Los 3 grupos en los que dividimos "Servicios": misma categoría que ya usa
    cada servicio en el admin (Pisos de Madera / Outdoors / Pisos Deportivos),
-   usada tanto para el menú desplegable de "Servicios" como para las secciones
-   de servicios.html. */
+   usada tanto para el menú desplegable de "Servicios" como para el filtro
+   ?categoria= de servicios.html. */
 const SERVICE_GROUPS = [
-  { anchor: 'madera', category: 'Pisos de Madera', label: 'Pisos de Madera' },
-  { anchor: 'outdoor', category: 'Outdoors', label: 'Outdoor' },
-  { anchor: 'deportivos', category: 'Pisos Deportivos', label: 'Pisos Deportivos' }
+  { slug: 'madera', category: 'Pisos de Madera', label: 'Pisos de Madera' },
+  { slug: 'outdoor', category: 'Outdoors', label: 'Outdoor' },
+  { slug: 'deportivos', category: 'Pisos Deportivos', label: 'Pisos Deportivos' }
 ];
 
 function ladServiceCategoryLabel(category) {
@@ -44,7 +44,7 @@ function ladNavHTML(extraClass) {
       <div class="nav-dropdown">
         <a href="${l.href}" data-nav="${l.key}" class="${extraClass || ''}">${l.label}</a>
         <div class="nav-dropdown-menu">
-          ${SERVICE_GROUPS.map(g => `<a href="servicios.html#${g.anchor}">${g.label}</a>`).join('')}
+          ${SERVICE_GROUPS.map(g => `<a href="servicios.html?categoria=${g.slug}">${g.label}</a>`).join('')}
         </div>
       </div>`;
   }).join('');

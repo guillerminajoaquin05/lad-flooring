@@ -23,6 +23,12 @@
 
 <section class="section">
   <div class="container">
+    <div class="tag-filters" id="categoryFilters">
+      <button data-categoria="todos" class="active">Todos</button>
+      <button data-categoria="madera">Pisos de Madera</button>
+      <button data-categoria="outdoor">Outdoor</button>
+      <button data-categoria="deportivos">Pisos Deportivos</button>
+    </div>
     <div id="servicesGroups"></div>
   </div>
 </section>
@@ -68,24 +74,43 @@
       </div>`;
   }
 
-  (async () => {
-    const services = await ladGetServices();
-    document.getElementById('servicesGroups').innerHTML = SERVICE_GROUPS.map(g => {
-      const items = services.filter(s => s.category === g.category);
+  let currentCategoria = 'todos';
+  let allServices = [];
+
+  function renderServiceGroups() {
+    const groups = currentCategoria === 'todos' ? SERVICE_GROUPS : SERVICE_GROUPS.filter(g => g.slug === currentCategoria);
+    document.getElementById('servicesGroups').innerHTML = groups.map(g => {
+      const items = allServices.filter(s => s.category === g.category);
       const body = items.length
         ? `<div class="grid grid-3">${items.map(serviceCardHTML).join('')}</div>`
         : `<p style="color:#8199a3;">Próximamente vamos a sumar servicios en esta categoría. Consultanos si necesitás algo puntual.</p>`;
       return `
-        <div id="${g.anchor}" class="service-group" style="margin-bottom:48px;">
+        <div id="${g.slug}" class="service-group" style="margin-bottom:48px;">
           <h2 style="margin-bottom:20px;">${g.label}</h2>
           ${body}
         </div>`;
     }).join('');
+  }
 
-    if (location.hash) {
-      const target = document.querySelector(location.hash);
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+  document.querySelectorAll('#categoryFilters button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#categoryFilters button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentCategoria = btn.dataset.categoria;
+      renderServiceGroups();
+    });
+  });
+
+  (async () => {
+    allServices = await ladGetServices();
+
+    const params = new URLSearchParams(window.location.search);
+    currentCategoria = params.get('categoria') || 'todos';
+    document.querySelectorAll('#categoryFilters button').forEach(b => {
+      b.classList.toggle('active', b.dataset.categoria === currentCategoria);
+    });
+
+    renderServiceGroups();
   })();
 </script>
 </body>
