@@ -130,7 +130,7 @@ async function ladRenderLayout() {
   if (typeof ladUpdateCartBadge === 'function') ladUpdateCartBadge();
 }
 
-const LAD_TIER_LABELS = { hogar: 'Uso en el hogar', profesional: 'Uso profesional' };
+const LAD_TIER_LABELS = { interiores: 'Interiores', exteriores: 'Exteriores' };
 
 /* Renderiza el texto de "Modo de uso" como lista: las líneas que ya arrancan
    con un número (pasos de un instructivo, ej "1. Limpiar...") van sin tilde,
