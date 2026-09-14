@@ -133,6 +133,21 @@
         <div class="field"><label>Precio</label><input type="number" id="pPrice" required></div>
         <div class="field"><label>Stock</label><input type="number" id="pStock" required></div>
       </div>
+      <div class="grid grid-2" style="gap:16px;">
+        <div class="field">
+          <label>Uso (opcional)</label>
+          <select id="pUsageTier">
+            <option value="">Sin clasificar</option>
+            <option value="hogar">Hogar</option>
+            <option value="profesional">Profesional (requiere máquina)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Familia / Grupo (opcional)</label>
+          <input type="text" id="pFamily" placeholder="Ej: Spray Mop">
+        </div>
+      </div>
+      <p style="font-size:0.78rem;color:#8199a3;margin-top:-10px;">La "Familia" agrupa productos relacionados (ej: la mopa y sus repuestos) para que aparezcan juntos en la tienda.</p>
       <div class="field">
         <label>Opciones a elegir (opcional, un punto por línea)</label>
         <textarea id="pVariantOptions" rows="3" placeholder="Un ítem por renglón, ej:&#10;Madera&#10;Vinílico / Cerámica&#10;Aceitado/Encerado"></textarea>
@@ -448,6 +463,8 @@
     document.getElementById('pPrice').value = p.price;
     document.getElementById('pStock').value = p.stock;
     document.getElementById('pVariantOptions').value = (p.variantOptions || []).join('\n');
+    document.getElementById('pUsageTier').value = p.usageTier || '';
+    document.getElementById('pFamily').value = p.family || '';
     document.getElementById('pImg').value = p.img;
     document.getElementById('pImgPlaceholder').value = ladIsImageUrl(p.img) ? 'ph-1' : p.img;
     document.getElementById('pImgFile').value = '';
@@ -511,6 +528,8 @@
       price: parseFloat(document.getElementById('pPrice').value),
       stock: parseInt(document.getElementById('pStock').value),
       variant_options: document.getElementById('pVariantOptions').value.trim() || null,
+      usage_tier: document.getElementById('pUsageTier').value || null,
+      family: document.getElementById('pFamily').value.trim() || null,
       image_url: document.getElementById('pImg').value,
       description: document.getElementById('pDescription').value,
       usage_info: document.getElementById('pUsageInfo').value || null,

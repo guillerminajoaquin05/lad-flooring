@@ -72,13 +72,14 @@
     </div>
     <div>
       <span class="badge badge-outline">${product.category}</span>
+      ${product.usageTier ? `<span class="badge" style="margin-left:6px;">${LAD_TIER_LABELS[product.usageTier] || product.usageTier}</span>` : ''}
       <h1 style="margin-top:14px;">${product.name}</h1>
       <div style="margin:14px 0;">
         ${product.oldPrice ? `<span class="price-old">${ladFormatPrice(product.oldPrice)}</span>` : ''}
         <span class="price" style="font-size:1.6rem;">${ladFormatPrice(product.price)}</span>
         ${product.line === 'flotantes' ? '<span style="color:#8199a3;font-size:0.9rem;"> / m²</span>' : ''}
       </div>
-      <p>${product.description}</p>
+      <p style="white-space:pre-line;">${product.description}</p>
       ${variantsHTML}
       <p style="font-size:0.88rem;color:${product.stock > 0 ? '#3d8a5c' : '#A94442'};">
         ${product.stock > 0 ? `✓ Stock disponible (${product.stock} unidades)` : '✕ Sin stock'}

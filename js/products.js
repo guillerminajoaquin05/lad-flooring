@@ -17,15 +17,20 @@ function ladMapProduct(row) {
     hidden: row.hidden,
     description: row.description,
     usageInfo: row.usage_info,
-    variantOptions: (row.variant_options || '').split('\n').map(v => v.trim()).filter(Boolean)
+    variantOptions: (row.variant_options || '').split('\n').map(v => v.trim()).filter(Boolean),
+    family: row.family,
+    usageTier: row.usage_tier
   };
 }
 
-async function ladGetProducts({ line, includeHidden = false } = {}) {
+async function ladGetProducts({ line, tier, includeHidden = false } = {}) {
   if (!ladSupabase) { console.warn('[Lad Flooring] Supabase no conectado — ladGetProducts() devuelve []'); return []; }
-  let query = ladSupabase.from('products').select('*').order('name');
+  let query = ladSupabase.from('products').select('*')
+    .order('family', { ascending: true, nullsFirst: false })
+    .order('name');
   if (!includeHidden) query = query.eq('hidden', false);
   if (line && line !== 'todos') query = query.eq('line', line);
+  if (tier && tier !== 'todos') query = query.eq('usage_tier', tier);
   const { data, error } = await query;
   if (error) { console.error('[Lad Flooring] Error cargando productos:', error.message); return []; }
   return data.map(ladMapProduct);

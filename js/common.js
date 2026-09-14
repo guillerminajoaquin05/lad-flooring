@@ -130,6 +130,8 @@ async function ladRenderLayout() {
   if (typeof ladUpdateCartBadge === 'function') ladUpdateCartBadge();
 }
 
+const LAD_TIER_LABELS = { hogar: 'Uso en el hogar', profesional: 'Uso profesional' };
+
 /* Fotos de producto/servicio: "img" puede ser un placeholder de color (ph-1..ph-5)
    o la URL real de una foto subida a Supabase Storage. ladImgClass/ladImgStyle
    deciden cuál de las dos mostrar sin que cada pantalla tenga que repetir la lógica. */
