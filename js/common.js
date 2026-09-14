@@ -12,6 +12,8 @@ const LAD_ICONS = {
   logout: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>`
 };
 
+const LAD_WHATSAPP_URL = 'https://wa.me/5491126371921';
+
 const NAV_LINKS = [
   { href: 'servicios.html', label: 'Servicios', key: 'servicios' },
   { href: 'tienda.html', label: 'Productos', key: 'tienda' },
@@ -29,7 +31,7 @@ function ladHeaderHTML() {
   <div class="topbar">
     <div class="container">
       <div class="topbar-contact">
-        <span>${LAD_ICONS.phone} Agregar número (WhatsApp)</span>
+        <a href="${LAD_WHATSAPP_URL}" target="_blank" rel="noopener" style="color:inherit;">${LAD_ICONS.phone} +54 9 11 2637-1921 (WhatsApp)</a>
       </div>
       <div class="topbar-contact">
         <span>${LAD_ICONS.truck} Envíos a todo el país</span>
@@ -74,7 +76,7 @@ function ladFooterHTML() {
         <div>
           <h4>Contacto</h4>
           <a href="mailto:info@ladflooring.com">info@ladflooring.com</a>
-          <a href="#">${LAD_ICONS.phone} Agregar número (WhatsApp)</a>
+          <a href="${LAD_WHATSAPP_URL}" target="_blank" rel="noopener">${LAD_ICONS.phone} +54 9 11 2637-1921 (WhatsApp)</a>
           <a href="#">Lun a Vie de 9 a 18 hs</a>
         </div>
         <div>
