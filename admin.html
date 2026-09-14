@@ -123,11 +123,8 @@
     <form id="productForm">
       <input type="hidden" id="pId">
       <div class="field"><label>Título</label><input type="text" id="pName" required></div>
-      <div class="grid grid-2" style="gap:16px;">
-        <div class="field"><label>Línea</label>
-          <select id="pLine"><option value="bona">Bona</option><option value="flotantes">Pisos Flotantes</option></select>
-        </div>
-        <div class="field"><label>Categoría</label><input type="text" id="pCategory" placeholder="Ej: Mantenimiento"></div>
+      <div class="field"><label>Línea</label>
+        <select id="pLine"><option value="bona">Bona</option><option value="flotantes">Pisos Flotantes</option></select>
       </div>
       <div class="grid grid-2" style="gap:16px;">
         <div class="field"><label>Precio</label><input type="number" id="pPrice" required></div>
@@ -459,7 +456,6 @@
     document.getElementById('pId').value = p.id;
     document.getElementById('pName').value = p.name;
     document.getElementById('pLine').value = p.line;
-    document.getElementById('pCategory').value = p.category;
     document.getElementById('pPrice').value = p.price;
     document.getElementById('pStock').value = p.stock;
     document.getElementById('pVariantOptions').value = (p.variantOptions || []).join('\n');
@@ -524,7 +520,7 @@
     const data = {
       name: document.getElementById('pName').value,
       line: document.getElementById('pLine').value,
-      category: document.getElementById('pCategory').value || 'General',
+      category: 'General',
       price: parseFloat(document.getElementById('pPrice').value),
       stock: parseInt(document.getElementById('pStock').value),
       variant_options: document.getElementById('pVariantOptions').value.trim() || null,
