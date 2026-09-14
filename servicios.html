@@ -58,12 +58,12 @@
 <script src="js/common.js"></script>
 <script>
   function serviceCardHTML(s) {
-    const modulo = encodeURIComponent(s.category === 'Outdoors' ? 'Outdoors / Decks' : s.category);
+    const modulo = encodeURIComponent(s.categories.includes('Outdoors') ? 'Outdoors / Decks' : (s.categories[0] || ''));
     return `
       <div class="card">
         <a href="servicio.html?id=${s.id}"><div class="card-img ph ${ladImgClass(s.img)}" style="${ladImgBg(s.img)}">${ladIsImageUrl(s.img) ? '' : `<span class="ph-tag">Foto: ${s.name.toLowerCase()}</span>`}</div></a>
         <div class="card-body">
-          <span class="badge badge-outline">${ladServiceCategoryLabel(s.category)}</span>
+          ${s.categories.map(c => `<span class="badge badge-outline">${ladServiceCategoryLabel(c)}</span>`).join(' ')}
           <h3 style="margin-top:10px;"><a href="servicio.html?id=${s.id}">${s.name}</a></h3>
           <p>${s.shortDescription}</p>
         </div>
@@ -80,7 +80,7 @@
   function renderServiceGroups() {
     const groups = currentCategoria === 'todos' ? SERVICE_GROUPS : SERVICE_GROUPS.filter(g => g.slug === currentCategoria);
     document.getElementById('servicesGroups').innerHTML = groups.map(g => {
-      const items = allServices.filter(s => s.category === g.category);
+      const items = allServices.filter(s => s.categories.includes(g.category));
       const body = items.length
         ? `<div class="grid grid-3">${items.map(serviceCardHTML).join('')}</div>`
         : `<p style="color:#8199a3;">Próximamente vamos a sumar servicios en esta categoría. Consultanos si necesitás algo puntual.</p>`;

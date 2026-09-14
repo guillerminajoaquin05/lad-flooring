@@ -212,12 +212,9 @@
     <form id="serviceForm">
       <input type="hidden" id="sId">
       <div class="field"><label>Título</label><input type="text" id="sName" required></div>
-      <div class="field"><label>Categoría</label>
-        <select id="sCategory">
-          <option value="Pisos de Madera">Pisos de Madera</option>
-          <option value="Outdoors">Outdoors</option>
-          <option value="Pisos Deportivos">Pisos Deportivos</option>
-        </select>
+      <div class="field">
+        <label>Categorías (podés elegir más de una)</label>
+        <div id="sCategoriesWrap" style="display:flex;gap:16px;flex-wrap:wrap;"></div>
       </div>
       <div class="field">
         <label>Imagen del servicio</label>
@@ -705,7 +702,7 @@
       <tr>
         <td><div class="admin-thumb ph ${ladImgClass(s.img)}" style="${ladImgBg(s.img)}"></div></td>
         <td>${s.name}</td>
-        <td>${s.category}</td>
+        <td>${(s.categories || []).map(ladServiceCategoryLabel).join(', ') || '—'}</td>
         <td><span class="status-dot ${s.hidden ? 'hidden-status' : ''}">${s.hidden ? 'Oculto' : 'Visible'}</span></td>
         <td>
           <div class="row-actions">
@@ -718,10 +715,17 @@
     `).join('');
   }
 
+  document.getElementById('sCategoriesWrap').innerHTML = SERVICE_GROUPS.map(g => `
+    <label class="checkbox-row" style="margin-bottom:0;">
+      <input type="checkbox" class="sCategoryChk" value="${g.category}"> ${g.label}
+    </label>
+  `).join('');
+
   document.getElementById('btnNuevoServicio').addEventListener('click', () => {
     document.getElementById('serviceModalTitle').textContent = 'Agregar servicio';
     document.getElementById('serviceForm').reset();
     document.getElementById('sId').value = '';
+    document.querySelectorAll('.sCategoryChk').forEach(chk => chk.checked = false);
     document.getElementById('sImgMsg').textContent = '';
     ladUpdateImgPreview('sImgPreview', 'ph-1');
     sGallery.resetForNew();
@@ -733,7 +737,9 @@
     document.getElementById('serviceModalTitle').textContent = 'Editar servicio';
     document.getElementById('sId').value = s.id;
     document.getElementById('sName').value = s.name;
-    document.getElementById('sCategory').value = s.category;
+    document.querySelectorAll('.sCategoryChk').forEach(chk => {
+      chk.checked = (s.categories || []).includes(chk.value);
+    });
     document.getElementById('sImg').value = s.img;
     document.getElementById('sImgPlaceholder').value = ladIsImageUrl(s.img) ? 'ph-1' : s.img;
     document.getElementById('sImgFile').value = '';
@@ -764,10 +770,13 @@
 
   document.getElementById('serviceForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    const categories = Array.from(document.querySelectorAll('.sCategoryChk:checked')).map(chk => chk.value);
+    if (categories.length === 0) { alert('Elegí al menos una categoría.'); return; }
     const id = document.getElementById('sId').value;
     const data = {
       name: document.getElementById('sName').value,
-      category: document.getElementById('sCategory').value,
+      category: categories[0],
+      categories,
       image_url: document.getElementById('sImg').value,
       short_description: document.getElementById('sShortDescription').value,
       description: document.getElementById('sDescription').value,

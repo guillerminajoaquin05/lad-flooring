@@ -64,7 +64,7 @@
       <div class="gallery-thumbs" id="galleryThumbs" style="display:none;"></div>
     </div>
     <div>
-      <span class="badge badge-outline">${ladServiceCategoryLabel(service.category)}</span>
+      ${service.categories.map(c => `<span class="badge badge-outline">${ladServiceCategoryLabel(c)}</span>`).join(' ')}
       <h1 style="margin-top:14px;">${service.name}</h1>
       <p style="white-space:pre-line;">${service.description}</p>
       <h4>¿Qué incluye?</h4>
@@ -72,7 +72,7 @@
         ${service.includes.map(item => `<li>${item}</li>`).join('')}
       </ul>
       <div class="divider"></div>
-      <a href="cotizacion.html?modulo=${encodeURIComponent(service.category === 'Outdoors' ? 'Outdoors / Decks' : service.category)}" class="btn btn-primary btn-lg" style="margin-top:8px;">Solicitar cotización para este servicio</a>
+      <a href="cotizacion.html?modulo=${encodeURIComponent(service.categories.includes('Outdoors') ? 'Outdoors / Decks' : (service.categories[0] || ''))}" class="btn btn-primary btn-lg" style="margin-top:8px;">Solicitar cotización para este servicio</a>
     </div>
   `;
 
@@ -108,7 +108,7 @@
       <div class="card">
         <a href="servicio.html?id=${s.id}"><div class="card-img ph ${ladImgClass(s.img)}" style="${ladImgBg(s.img)}"></div></a>
         <div class="card-body">
-          <span class="badge badge-outline">${ladServiceCategoryLabel(s.category)}</span>
+          ${s.categories.map(c => `<span class="badge badge-outline">${ladServiceCategoryLabel(c)}</span>`).join(' ')}
           <h3 style="margin-top:10px;"><a href="servicio.html?id=${s.id}">${s.name}</a></h3>
           <p>${s.shortDescription}</p>
         </div>

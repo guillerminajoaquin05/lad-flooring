@@ -5,6 +5,7 @@ function ladMapService(row) {
     id: row.id,
     name: row.name,
     category: row.category,
+    categories: (row.categories && row.categories.length) ? row.categories : (row.category ? [row.category] : []),
     img: row.image_url,
     shortDescription: row.short_description,
     description: row.description,
