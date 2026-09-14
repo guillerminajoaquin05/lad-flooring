@@ -132,6 +132,18 @@ async function ladRenderLayout() {
 
 const LAD_TIER_LABELS = { hogar: 'Uso en el hogar', profesional: 'Uso profesional' };
 
+/* Renderiza el texto de "Modo de uso" como lista: las líneas que ya arrancan
+   con un número (pasos de un instructivo, ej "1. Limpiar...") van sin tilde,
+   porque el número ya cumple esa función. El resto (encabezados, datos sueltos)
+   lleva el tilde ✓ normal. */
+function ladRenderUsageList(text) {
+  const lines = (text || '').split('\n').map(v => v.trim()).filter(Boolean);
+  return `<ul class="includes-list">${lines.map(line => {
+    const isNumbered = /^\d+[.)]/.test(line);
+    return `<li${isNumbered ? ' class="plain"' : ''}>${line}</li>`;
+  }).join('')}</ul>`;
+}
+
 /* Fotos de producto/servicio: "img" puede ser un placeholder de color (ph-1..ph-5)
    o la URL real de una foto subida a Supabase Storage. ladImgClass/ladImgStyle
    deciden cuál de las dos mostrar sin que cada pantalla tenga que repetir la lógica. */

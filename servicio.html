@@ -77,8 +77,7 @@
   `;
 
   if (service.usageInfo && service.usageInfo.trim()) {
-    const usageItems = service.usageInfo.split('\n').map(v => v.trim()).filter(Boolean);
-    document.getElementById('usageInfoText').innerHTML = `<ul class="includes-list">${usageItems.map(i => `<li>${i}</li>`).join('')}</ul>`;
+    document.getElementById('usageInfoText').innerHTML = ladRenderUsageList(service.usageInfo);
     document.getElementById('usageInfoSection').style.display = 'block';
   }
 

@@ -97,8 +97,7 @@
   `;
 
   if (product.usageInfo && product.usageInfo.trim()) {
-    const usageItems = product.usageInfo.split('\n').map(v => v.trim()).filter(Boolean);
-    document.getElementById('usageInfoText').innerHTML = `<ul class="includes-list">${usageItems.map(i => `<li>${i}</li>`).join('')}</ul>`;
+    document.getElementById('usageInfoText').innerHTML = ladRenderUsageList(product.usageInfo);
     document.getElementById('usageInfoSection').style.display = 'block';
   }
 
