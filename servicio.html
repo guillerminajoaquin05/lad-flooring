@@ -64,7 +64,7 @@
       <div class="gallery-thumbs" id="galleryThumbs" style="display:none;"></div>
     </div>
     <div>
-      <span class="badge badge-outline">${service.category}</span>
+      <span class="badge badge-outline">${ladServiceCategoryLabel(service.category)}</span>
       <h1 style="margin-top:14px;">${service.name}</h1>
       <p style="white-space:pre-line;">${service.description}</p>
       <h4>¿Qué incluye?</h4>
@@ -108,7 +108,7 @@
       <div class="card">
         <a href="servicio.html?id=${s.id}"><div class="card-img ph ${ladImgClass(s.img)}" style="${ladImgBg(s.img)}"></div></a>
         <div class="card-body">
-          <span class="badge badge-outline">${s.category}</span>
+          <span class="badge badge-outline">${ladServiceCategoryLabel(s.category)}</span>
           <h3 style="margin-top:10px;"><a href="servicio.html?id=${s.id}">${s.name}</a></h3>
           <p>${s.shortDescription}</p>
         </div>

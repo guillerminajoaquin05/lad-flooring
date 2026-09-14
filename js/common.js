@@ -22,8 +22,32 @@ const NAV_LINKS = [
   { href: 'faq.html', label: 'FAQs', key: 'faqs' }
 ];
 
+/* Los 3 grupos en los que dividimos "Servicios": misma categoría que ya usa
+   cada servicio en el admin (Pisos de Madera / Outdoors / Pisos Deportivos),
+   usada tanto para el menú desplegable de "Servicios" como para las secciones
+   de servicios.html. */
+const SERVICE_GROUPS = [
+  { anchor: 'madera', category: 'Pisos de Madera', label: 'Pisos de Madera' },
+  { anchor: 'outdoor', category: 'Outdoors', label: 'Outdoor' },
+  { anchor: 'deportivos', category: 'Pisos Deportivos', label: 'Pisos Deportivos' }
+];
+
+function ladServiceCategoryLabel(category) {
+  const group = SERVICE_GROUPS.find(g => g.category === category);
+  return group ? group.label : category;
+}
+
 function ladNavHTML(extraClass) {
-  return NAV_LINKS.map(l => `<a href="${l.href}" data-nav="${l.key}" class="${extraClass || ''}">${l.label}</a>`).join('');
+  return NAV_LINKS.map(l => {
+    if (l.key !== 'servicios') return `<a href="${l.href}" data-nav="${l.key}" class="${extraClass || ''}">${l.label}</a>`;
+    return `
+      <div class="nav-dropdown">
+        <a href="${l.href}" data-nav="${l.key}" class="${extraClass || ''}">${l.label}</a>
+        <div class="nav-dropdown-menu">
+          ${SERVICE_GROUPS.map(g => `<a href="servicios.html#${g.anchor}">${g.label}</a>`).join('')}
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function ladHeaderHTML() {
