@@ -6,6 +6,29 @@
 <title>Tienda Online — Lad Flooring</title>
 <link rel="icon" href="assets/img/logo-mark.svg">
 <link rel="stylesheet" href="css/style.css">
+<style>
+  .sort-wrap { position: relative; flex-shrink: 0; }
+  .sort-btn {
+    width: 42px; height: 42px; border-radius: var(--radius-full);
+    border: 1px solid var(--border); background: var(--white); color: var(--navy);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .sort-btn:hover { border-color: var(--steel-blue); }
+  .sort-menu {
+    display: none; position: absolute; right: 0; top: 50px; z-index: 20;
+    background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-card); min-width: 210px; overflow: hidden;
+  }
+  .sort-menu.open { display: block; }
+  .sort-menu button {
+    display: block; width: 100%; text-align: left; padding: 12px 16px;
+    border: none; background: none; font-family: var(--font-serif); font-size: 0.9rem;
+    color: var(--navy); cursor: pointer; border-bottom: 1px solid var(--border);
+  }
+  .sort-menu button:last-child { border-bottom: none; }
+  .sort-menu button:hover { background: var(--bg); }
+  .sort-menu button.active { color: var(--gold); font-weight: bold; }
+</style>
 </head>
 <body data-page="tienda">
 
@@ -23,15 +46,20 @@
 
 <section class="section">
   <div class="container">
-    <div class="tag-filters" id="tagFilters">
-      <button data-line="todos" class="active">Todos</button>
-      <button data-line="bona">Línea Bona</button>
-      <button data-line="flotantes">Pisos Flotantes</button>
-    </div>
-    <div class="tag-filters" id="tierFilters" style="margin-top:-8px;">
-      <button data-tier="todos" class="active">Uso: todos</button>
-      <button data-tier="hogar">Uso en el hogar</button>
-      <button data-tier="profesional">Uso profesional</button>
+    <div class="flex-between" style="margin-bottom:8px;flex-wrap:wrap;gap:12px;">
+      <div class="tag-filters" id="tagFilters">
+        <button data-line="todos" class="active">Todos</button>
+        <button data-line="bona">Línea Bona</button>
+        <button data-line="flotantes">Pisos Flotantes</button>
+      </div>
+      <div class="sort-wrap">
+        <button class="sort-btn" id="sortBtn" title="Ordenar" aria-label="Ordenar">☰</button>
+        <div class="sort-menu" id="sortMenu">
+          <button data-sort="relevancia" class="active">Relevancia</button>
+          <button data-sort="precio-asc">Precio: menor a mayor</button>
+          <button data-sort="precio-desc">Precio: mayor a menor</button>
+        </div>
+      </div>
     </div>
     <div class="grid grid-4" id="productGrid"></div>
   </div>
@@ -47,12 +75,20 @@
 <script src="js/common.js"></script>
 <script>
   let currentLine = 'todos';
-  let currentTier = 'todos';
+  let currentSort = 'relevancia';
+
+  function sortProducts(products) {
+    const sorted = products.slice();
+    if (currentSort === 'precio-asc') sorted.sort((a, b) => a.price - b.price);
+    else if (currentSort === 'precio-desc') sorted.sort((a, b) => b.price - a.price);
+    // "relevancia" ya viene ordenado por familia + nombre desde ladGetProducts()
+    return sorted;
+  }
 
   async function renderProducts() {
     const grid = document.getElementById('productGrid');
     grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#8199a3;">Cargando productos...</p>';
-    const products = await ladGetProducts({ line: currentLine, tier: currentTier });
+    const products = sortProducts(await ladGetProducts({ line: currentLine }));
     if (products.length === 0) {
       grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#8199a3;">No hay productos en esta categoría por el momento.</p>';
       return;
@@ -61,8 +97,7 @@
       <div class="card">
         <a href="producto.html?id=${p.id}"><div class="card-img ph ${ladImgClass(p.img)}" style="${ladImgBg(p.img)}"></div></a>
         <div class="card-body">
-          <span class="badge badge-outline">${p.category}</span>
-          ${p.usageTier ? `<span class="badge" style="margin-left:6px;">${LAD_TIER_LABELS[p.usageTier] || p.usageTier}</span>` : ''}
+          ${p.usageTier ? `<span class="badge badge-outline">${LAD_TIER_LABELS[p.usageTier] || p.usageTier}</span>` : ''}
           <h3 style="margin-top:8px;"><a href="producto.html?id=${p.id}">${p.name}</a></h3>
         </div>
         <div class="card-footer">
@@ -85,11 +120,19 @@
     });
   });
 
-  document.querySelectorAll('#tierFilters button').forEach(btn => {
+  const sortBtn = document.getElementById('sortBtn');
+  const sortMenu = document.getElementById('sortMenu');
+  sortBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    sortMenu.classList.toggle('open');
+  });
+  document.addEventListener('click', () => sortMenu.classList.remove('open'));
+  document.querySelectorAll('#sortMenu button').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('#tierFilters button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#sortMenu button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      currentTier = btn.dataset.tier;
+      currentSort = btn.dataset.sort;
+      sortMenu.classList.remove('open');
       renderProducts();
     });
   });

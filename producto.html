@@ -71,8 +71,7 @@
       <div class="gallery-thumbs" id="galleryThumbs" style="display:none;"></div>
     </div>
     <div>
-      <span class="badge badge-outline">${product.category}</span>
-      ${product.usageTier ? `<span class="badge" style="margin-left:6px;">${LAD_TIER_LABELS[product.usageTier] || product.usageTier}</span>` : ''}
+      ${product.usageTier ? `<span class="badge badge-outline">${LAD_TIER_LABELS[product.usageTier] || product.usageTier}</span>` : ''}
       <h1 style="margin-top:14px;">${product.name}</h1>
       <div style="margin:14px 0;">
         ${product.oldPrice ? `<span class="price-old">${ladFormatPrice(product.oldPrice)}</span>` : ''}
