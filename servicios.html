@@ -61,7 +61,7 @@
     const modulo = encodeURIComponent(s.categories.includes('Outdoors') ? 'Exteriores / Decks' : (s.categories[0] || ''));
     return `
       <div class="card">
-        <a href="servicio.html?id=${s.id}"><div class="card-img ph ${ladImgClass(s.img)}" style="${ladImgBg(s.img)}">${ladIsImageUrl(s.img) ? '' : `<span class="ph-tag">Foto: ${s.name.toLowerCase()}</span>`}</div></a>
+        <a href="servicio.html?id=${s.id}"><div class="card-img ph service-photo ${ladImgClass(s.img)}" style="${ladImgBg(s.img)}">${ladIsImageUrl(s.img) ? '' : `<span class="ph-tag">Foto: ${s.name.toLowerCase()}</span>`}</div></a>
         <div class="card-body">
           <div class="service-tags">${s.categories.map(c => `<span class="badge badge-outline badge-sm">${ladServiceCategoryLabel(c)}</span>`).join('')}</div>
           <h3 style="margin-top:8px;"><a href="servicio.html?id=${s.id}">${s.name}</a></h3>

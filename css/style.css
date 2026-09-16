@@ -265,6 +265,8 @@ img { max-width: 100%; display: block; }
 .ph { position: relative; background-size: cover; background-position: center; }
 /* Fotos reales subidas por el admin: se muestran completas, sin recortar (letterbox blanco) */
 .ph.has-photo { background-size: contain; background-repeat: no-repeat; background-color: var(--white); }
+/* Fotos de servicios: a diferencia de productos, van con zoom (cover) y sin reborde blanco */
+.ph.service-photo.has-photo, .gallery-thumb.service-photo { background-size: cover; background-color: transparent; }
 .ph-1 { background: repeating-linear-gradient(120deg, #26485A 0 26px, #1D3A47 26px 52px); }
 .ph-2 { background: repeating-linear-gradient(120deg, #8FB0BC 0 26px, #6E939F 26px 52px); }
 .ph-3 { background: repeating-linear-gradient(120deg, #CBA876 0 26px, #B98950 26px 52px); }

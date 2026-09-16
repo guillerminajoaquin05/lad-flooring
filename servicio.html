@@ -58,7 +58,7 @@
 
   document.getElementById('serviceDetail').innerHTML = `
     <div>
-      <div class="ph ${ladImgClass(service.img)}" id="mainImage" style="height:420px;border-radius:var(--radius-lg);${ladImgBg(service.img)}">
+      <div class="ph service-photo ${ladImgClass(service.img)}" id="mainImage" style="height:420px;border-radius:var(--radius-lg);${ladImgBg(service.img)}">
         ${ladIsImageUrl(service.img) ? '' : `<span class="ph-tag">Foto: ${service.name.toLowerCase()}</span>`}
       </div>
       <div class="gallery-thumbs" id="galleryThumbs" style="display:none;"></div>
@@ -87,14 +87,14 @@
     const galleryMount = document.getElementById('galleryThumbs');
     galleryMount.style.display = 'flex';
     galleryMount.innerHTML = galleryPhotos.map((g, i) => `
-      <div class="gallery-thumb ${i === 0 ? 'active' : ''}" style="background-image:url('${g.image_url.replace(/'/g, "%27")}');" data-url="${g.image_url}"></div>
+      <div class="gallery-thumb service-photo ${i === 0 ? 'active' : ''}" style="background-image:url('${g.image_url.replace(/'/g, "%27")}');" data-url="${g.image_url}"></div>
     `).join('');
     galleryMount.querySelectorAll('.gallery-thumb').forEach(thumb => {
       thumb.addEventListener('click', () => {
         galleryMount.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
         thumb.classList.add('active');
         const mainImg = document.getElementById('mainImage');
-        mainImg.className = 'ph has-photo';
+        mainImg.className = 'ph service-photo has-photo';
         mainImg.style.backgroundImage = `url('${thumb.dataset.url}')`;
       });
     });
@@ -106,7 +106,7 @@
     .slice(0, 3)
     .map(s => `
       <div class="card">
-        <a href="servicio.html?id=${s.id}"><div class="card-img ph ${ladImgClass(s.img)}" style="${ladImgBg(s.img)}"></div></a>
+        <a href="servicio.html?id=${s.id}"><div class="card-img ph service-photo ${ladImgClass(s.img)}" style="${ladImgBg(s.img)}"></div></a>
         <div class="card-body">
           <div class="service-tags">${s.categories.map(c => `<span class="badge badge-outline badge-sm">${ladServiceCategoryLabel(c)}</span>`).join('')}</div>
           <h3 style="margin-top:10px;"><a href="servicio.html?id=${s.id}">${s.name}</a></h3>
