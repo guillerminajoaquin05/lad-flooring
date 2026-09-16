@@ -375,6 +375,10 @@ img { max-width: 100%; display: block; }
   animation: lad-float 5s ease-in-out infinite;
 }
 .floating-badge strong { display: block; font-size: 1.5rem; color: var(--navy); line-height: 1; margin-bottom: 6px; }
+.stat-badge-home { left: -32px; bottom: -64px; }
+@media (max-width: 700px) {
+  .stat-badge-home { left: -12px; bottom: -28px; }
+}
 .floating-badge.glass-dark strong { color: var(--cream); }
 .floating-badge span { font-size: 0.78rem; color: #5C7784; letter-spacing: 0.3px; }
 .floating-badge.glass-dark span { color: var(--powder-blue); }
