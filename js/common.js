@@ -28,7 +28,7 @@ const NAV_LINKS = [
    ?categoria= de servicios.html. */
 const SERVICE_GROUPS = [
   { slug: 'madera', category: 'Pisos de Madera', label: 'Pisos de Madera' },
-  { slug: 'outdoor', category: 'Outdoors', label: 'Outdoor' },
+  { slug: 'outdoor', category: 'Outdoors', label: 'Exteriores' },
   { slug: 'deportivos', category: 'Pisos Deportivos', label: 'Pisos Deportivos' }
 ];
 
