@@ -115,7 +115,6 @@ img { max-width: 100%; display: block; }
 
 .section { padding: var(--space-6) 0; }
 .section-tight { padding: var(--space-5) 0; }
-.service-group { scroll-margin-top: 130px; }
 .section-header { max-width: 640px; margin: 0 auto var(--space-4); text-align: center; }
 .section-header p { color: #5C7784; }
 
@@ -172,7 +171,7 @@ img { max-width: 100%; display: block; }
 }
 .topbar a { color: var(--cream); }
 .topbar-contact { display: flex; gap: var(--space-3); align-items: center; }
-.topbar-contact span { display: inline-flex; align-items: center; gap: 6px; }
+.topbar-contact span, .topbar-contact a { display: inline-flex; align-items: center; gap: 6px; }
 
 /* ---------- Header ---------- */
 .site-header {
@@ -456,6 +455,37 @@ img { max-width: 100%; display: block; }
 .card-body p { font-size: 0.92rem; flex: 1; }
 .card-footer { padding: 0 var(--space-3) var(--space-3); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 
+/* ---------- Lightbox (galería de proyecto en "burbuja") ---------- */
+.lightbox-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(20,40,47,0.72);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  display: none; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.lightbox-overlay.open { display: flex; }
+.lightbox-box {
+  position: relative;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  width: 100%; max-width: 620px; max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-float);
+}
+.lightbox-close {
+  position: absolute; top: 14px; right: 14px; z-index: 2;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(20,40,47,0.55); color: #fff; border: none;
+  cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;
+}
+.lightbox-close:hover { background: rgba(20,40,47,0.8); }
+.lightbox-img { height: 380px; background-size: cover; background-position: center; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+.lightbox-body { padding: var(--space-4); }
+.lightbox-body h3 { margin-bottom: 8px; }
+@media (max-width: 700px) {
+  .lightbox-img { height: 260px; }
+}
+
 .price { font-size: 1.2rem; color: var(--navy); font-weight: 700; font-family: Georgia, serif;}
 .price-old { text-decoration: line-through; color: #9AA9AE; font-size: 0.9rem; margin-right: 6px; }
 
@@ -470,6 +500,8 @@ img { max-width: 100%; display: block; }
   border-radius: 20px;
 }
 .badge-outline { background: transparent; border: 1px solid var(--steel-blue); color: var(--steel-blue); }
+.badge-sm { font-size: 0.62rem; padding: 3px 8px; letter-spacing: 0.6px; }
+.service-tags { display: flex; gap: 6px; flex-wrap: wrap; }
 
 /* ---------- Formularios ---------- */
 .form-card {

@@ -8,7 +8,7 @@ const LAD_ICONS = {
   truck: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14"><path d="M1 7h13v9H1zM14 10h4l4 3v3h-8z"/><circle cx="6" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg>`,
   instagram: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>`,
   facebook: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M14 9h3V6h-3a4 4 0 0 0-4 4v2H8v3h2v6h3v-6h3l1-3h-4v-2a1 1 0 0 1 1-1Z"/></svg>`,
-  whatsapp: `<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2Zm0 2a8 8 0 0 1 6.6 12.5.9.9 0 0 0-.1.9l.8 2.4-2.5-.7a.9.9 0 0 0-.8.1A8 8 0 1 1 12 4Zm-3 3.7c-.2 0-.5 0-.7.3-.3.3-1 1-1 2.4s1 2.8 1.2 3c.2.2 2 3.2 5 4.3.7.3 1.2.4 1.7.3.6-.1 1.7-.7 2-1.4.2-.6.2-1.2.2-1.3l-.4-.3c-.3-.1-1.7-.9-2-1s-.5-.1-.6.1-.6.8-.8 1c-.1.1-.3.2-.5.1a6.4 6.4 0 0 1-1.9-1.2 7 7 0 0 1-1.3-1.6c-.1-.2 0-.4.1-.5l.4-.5.3-.4c.1-.2 0-.3 0-.5l-.9-2.1c-.2-.5-.4-.4-.6-.4Z"/></svg>`,
+  whatsapp: `<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2Zm0 2a8 8 0 0 1 6.6 12.5.9.9 0 0 0-.1.9l.8 2.4-2.5-.7a.9.9 0 0 0-.8.1A8 8 0 1 1 12 4Zm-3 3.7c-.2 0-.5 0-.7.3-.3.3-1 1-1 2.4s1 2.8 1.2 3c.2.2 2 3.2 5 4.3.7.3 1.2.4 1.7.3.6-.1 1.7-.7 2-1.4.2-.6.2-1.2.2-1.3l-.4-.3c-.3-.1-1.7-.9-2-1s-.5-.1-.6.1-.6.8-.8 1c-.1.1-.3.2-.5.1a6.4 6.4 0 0 1-1.9-1.2 7 7 0 0 1-1.3-1.6c-.1-.2 0-.4.1-.5l.4-.5.3-.4c.1-.2 0-.3 0-.5l-.9-2.1c-.2-.5-.4-.4-.6-.4Z"/></svg>`,
   logout: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>`
 };
 
@@ -55,7 +55,7 @@ function ladHeaderHTML() {
   <div class="topbar">
     <div class="container">
       <div class="topbar-contact">
-        <a href="${LAD_WHATSAPP_URL}" target="_blank" rel="noopener" style="color:inherit;">${LAD_ICONS.phone} +54 9 11 2637-1921 (WhatsApp)</a>
+        <a href="${LAD_WHATSAPP_URL}" target="_blank" rel="noopener" style="color:inherit;">${LAD_ICONS.whatsapp} +54 9 11 2637-1921</a>
       </div>
       <div class="topbar-contact">
         <span>${LAD_ICONS.truck} Envíos a todo el país</span>
@@ -100,7 +100,7 @@ function ladFooterHTML() {
         <div>
           <h4>Contacto</h4>
           <a href="mailto:info@ladflooring.com">info@ladflooring.com</a>
-          <a href="${LAD_WHATSAPP_URL}" target="_blank" rel="noopener">${LAD_ICONS.phone} +54 9 11 2637-1921 (WhatsApp)</a>
+          <a href="${LAD_WHATSAPP_URL}" target="_blank" rel="noopener">${LAD_ICONS.whatsapp} +54 9 11 2637-1921</a>
           <a href="#">Lun a Vie de 9 a 18 hs</a>
         </div>
         <div>

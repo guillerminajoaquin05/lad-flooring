@@ -6,6 +6,7 @@ function ladMapService(row) {
     name: row.name,
     category: row.category,
     categories: (row.categories && row.categories.length) ? row.categories : (row.category ? [row.category] : []),
+    sortOrder: row.sort_order,
     img: row.image_url,
     shortDescription: row.short_description,
     description: row.description,
@@ -17,9 +18,17 @@ function ladMapService(row) {
 
 async function ladGetServices({ includeHidden = false } = {}) {
   if (!ladSupabase) { console.warn('[Lad Flooring] Supabase no conectado — ladGetServices() devuelve []'); return []; }
-  let query = ladSupabase.from('services').select('*').order('name');
+  let query = ladSupabase.from('services').select('*')
+    .order('sort_order', { ascending: true, nullsFirst: false })
+    .order('name');
   if (!includeHidden) query = query.eq('hidden', false);
-  const { data, error } = await query;
+  let { data, error } = await query;
+  if (error && error.message.includes('sort_order')) {
+    /* Todavía no se corrió la migración que agrega esta columna — reintentamos sin ordenar por ella. */
+    let fallback = ladSupabase.from('services').select('*').order('name');
+    if (!includeHidden) fallback = fallback.eq('hidden', false);
+    ({ data, error } = await fallback);
+  }
   if (error) { console.error('[Lad Flooring] Error cargando servicios:', error.message); return []; }
   return data.map(ladMapService);
 }

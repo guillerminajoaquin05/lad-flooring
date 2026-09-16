@@ -217,6 +217,11 @@
         <div id="sCategoriesWrap" style="display:flex;gap:16px;flex-wrap:wrap;"></div>
       </div>
       <div class="field">
+        <label>Orden (opcional)</label>
+        <input type="number" id="sSortOrder" placeholder="Ej: 1">
+        <p style="font-size:0.78rem;color:#8199a3;margin:6px 0 0;">Define en qué lugar aparece dentro de "Servicios" (menor número primero). Dejalo vacío para que aparezca al final, ordenado por nombre.</p>
+      </div>
+      <div class="field">
         <label>Imagen del servicio</label>
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
           <div class="ph admin-thumb" id="sImgPreview" style="width:64px;height:64px;flex-shrink:0;"></div>
@@ -740,6 +745,7 @@
     document.querySelectorAll('.sCategoryChk').forEach(chk => {
       chk.checked = (s.categories || []).includes(chk.value);
     });
+    document.getElementById('sSortOrder').value = s.sortOrder != null ? s.sortOrder : '';
     document.getElementById('sImg').value = s.img;
     document.getElementById('sImgPlaceholder').value = ladIsImageUrl(s.img) ? 'ph-1' : s.img;
     document.getElementById('sImgFile').value = '';
@@ -777,6 +783,7 @@
       name: document.getElementById('sName').value,
       category: categories[0],
       categories,
+      sort_order: document.getElementById('sSortOrder').value !== '' ? parseInt(document.getElementById('sSortOrder').value) : null,
       image_url: document.getElementById('sImg').value,
       short_description: document.getElementById('sShortDescription').value,
       description: document.getElementById('sDescription').value,

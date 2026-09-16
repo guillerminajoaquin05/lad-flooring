@@ -35,22 +35,18 @@
 </section>
 
 <section class="section-tight bg-navy text-center">
-  <div class="container grid grid-4">
+  <div class="container grid grid-3">
     <div>
       <h2 style="color:var(--gold);font-size:2.4rem;">+20</h2>
       <p style="color:var(--powder-blue)">Años de experiencia</p>
     </div>
     <div>
-      <h2 style="color:var(--gold);font-size:2.4rem;">+1200</h2>
+      <h2 style="color:var(--gold);font-size:2.4rem;">+2400</h2>
       <p style="color:var(--powder-blue)">Proyectos entregados</p>
     </div>
     <div>
       <h2 style="color:var(--gold);font-size:2.4rem;">100%</h2>
       <p style="color:var(--powder-blue)">Productos originales</p>
-    </div>
-    <div>
-      <h2 style="color:var(--gold);font-size:2.4rem;">+50</h2>
-      <p style="color:var(--powder-blue)">Ciudades atendidas</p>
     </div>
   </div>
 </section>
@@ -61,16 +57,16 @@
       <span class="eyebrow">Nuestra filosofía</span>
       <h2>Cómo trabajamos</h2>
     </div>
-    <div class="grid grid-3">
-      <div class="text-center">
+    <div class="grid grid-3" style="gap:var(--space-5);">
+      <div style="max-width:320px;">
         <h3>Nuestro equipo</h3>
-        <p>Contamos con un equipo capacitado y certificado, comprometido con la calidad en cada etapa del trabajo. La atención es personalizada y el trato, profesional — desde la primera consulta hasta la entrega final.</p>        
-        </div>
-      <div class="text-center">
-        <h3>Tecnología de última generación</h3>
-        <p>Combinamos experiencia con tecnología, trabajamos exclusivamente con maquinaria y productos Bona certificados incluyendo sistema 99% sin polvo— el estándar de referencia en Europa para el cuidado y tratamiento de pisos de madera. </p>
+        <p>Contamos con un equipo capacitado y certificado, comprometido con la calidad en cada etapa del trabajo. La atención es personalizada y el trato, profesional — desde la primera consulta hasta la entrega final.</p>
       </div>
-      <div class="text-center">
+      <div style="max-width:320px;">
+        <h3>Tecnología de última generación</h3>
+        <p>Combinamos experiencia con tecnología, trabajamos exclusivamente con maquinaria y productos Bona certificados incluyendo sistema 99% sin polvo — el estándar de referencia en Europa para el cuidado y tratamiento de pisos de madera.</p>
+      </div>
+      <div style="max-width:320px;">
         <h3>Acompañamiento Integral</h3>
         <p>El trabajo no termina con la entrega. Respondemos consultas, hacemos seguimiento y si algo requiere revisión, volvemos. También te orientamos en el cuidado y mantenimiento del piso con productos profesionales — para que el resultado dure en el tiempo.</p>
       </div>
@@ -84,42 +80,21 @@
       <span class="eyebrow">Nuestro trabajo</span>
       <h2>Trabajos Destacados</h2>
     </div>
-    <div class="grid grid-4">
-      <div class="card">
-        <div class="card-img" style="background-image:url('assets/img/proyecto-recoleta.jpeg');"></div>
-        <div class="card-body">
-          <span class="badge badge-outline">Pisos de Madera</span>
-          <h3 style="margin-top:10px;">Parquet Recoleta</h3>
-          <p>Hidrolaqueado Bona sobre roble de Slavonia, 300 m². Proyecto residencial.</p>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-img" style="background-image:url('assets/img/proyecto-talcahuano.jpg');"></div>
-        <div class="card-body">
-          <span class="badge badge-outline">Pisos Deportivos</span>
-          <h3 style="margin-top:10px;">Proyecto Talcahuano</h3>
-          <p>Aplicación de Craft Oil e hidrolaqueado Bona sobre piso de eucaliptus. Proyecto residencial.</p>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-img" style="background-image:url('assets/img/proyecto-miguel-cane.jpeg');"></div>
-        <div class="card-body">
-          <span class="badge badge-outline">Pisos de Madera</span>
-          <h3 style="margin-top:10px;">Parquet Palermo</h3>
-          <p>Reparación, pulido e hidrolaqueado Bona sobre piso de lapacho en salto con varillas de bronce. Proyecto residencial.</p>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-img" style="background-image:url('assets/img/proyecto-terraza-deck.jpg');"></div>
-        <div class="card-body">
-          <span class="badge badge-outline">Outdoors</span>
-          <h3 style="margin-top:10px;">Terraza Deck</h3>
-          <p>Reparación, pulido e hidrolaqueado Bona en terraza deck exterior.</p>
-        </div>
-      </div>
-    </div>
+    <div class="grid grid-4" id="projectsGrid"></div>
   </div>
 </section>
+
+<div class="lightbox-overlay" id="projectLightbox">
+  <div class="lightbox-box">
+    <button type="button" class="lightbox-close" onclick="closeProjectLightbox()" aria-label="Cerrar">✕</button>
+    <div class="lightbox-img" id="lightboxImg"></div>
+    <div class="lightbox-body">
+      <span class="badge badge-outline" id="lightboxWood"></span>
+      <h3 style="margin-top:10px;" id="lightboxTitle"></h3>
+      <p id="lightboxDesc"></p>
+    </div>
+  </div>
+</div>
 
 <section class="section bg-rose text-center">
   <div class="container">
@@ -136,5 +111,62 @@
 <script src="js/cart.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/common.js"></script>
+<script>
+  const PROJECTS = [
+    {
+      img: 'assets/img/proyecto-recoleta.jpeg',
+      wood: 'Roble de Slavonia',
+      title: 'Parquet Recoleta',
+      description: 'Departamento residencial — Parquet de Roble de Slavonia, 300 m². Renovación completa con hidrolaqueado de alto rendimiento.'
+    },
+    {
+      img: 'assets/img/proyecto-talcahuano.jpg',
+      wood: 'Eucalipto',
+      title: 'Proyecto Talcahuano',
+      description: 'Departamento residencial — Piso de Eucalipto, 80 m². Recambio de tablas, pulido y tratamiento combinado con craft oil y terminación con hidrolaqueado.'
+    },
+    {
+      img: 'assets/img/proyecto-miguel-cane.jpeg',
+      wood: 'Lapacho en Salto',
+      title: 'Parquet Palermo',
+      description: '200 m² de Lapacho con varillas de bronce restaurados desde cero. Recambio de tablas por antigüedad y recuperación del brillo original.'
+    },
+    {
+      img: 'assets/img/proyecto-terraza-deck.jpg',
+      wood: 'Exteriores',
+      title: 'Terraza Deck',
+      description: 'Terraza deck — Deck recuperado desde un tono oscurecido a su color natural. Pulido y tratamiento con productos Bona aptos para intemperie y UV.'
+    }
+  ];
+
+  document.getElementById('projectsGrid').innerHTML = PROJECTS.map((p, i) => `
+    <div class="card" style="cursor:pointer;" onclick="openProjectLightbox(${i})">
+      <div class="card-img" style="background-image:url('${p.img}');"></div>
+      <div class="card-body">
+        <span class="badge badge-outline">${p.wood}</span>
+        <h3 style="margin-top:10px;">${p.title}</h3>
+        <p>${p.description}</p>
+      </div>
+    </div>
+  `).join('');
+
+  function openProjectLightbox(i) {
+    const p = PROJECTS[i];
+    document.getElementById('lightboxImg').style.backgroundImage = `url('${p.img}')`;
+    document.getElementById('lightboxWood').textContent = p.wood;
+    document.getElementById('lightboxTitle').textContent = p.title;
+    document.getElementById('lightboxDesc').textContent = p.description;
+    document.getElementById('projectLightbox').classList.add('open');
+  }
+  function closeProjectLightbox() {
+    document.getElementById('projectLightbox').classList.remove('open');
+  }
+  document.getElementById('projectLightbox').addEventListener('click', (e) => {
+    if (e.target.id === 'projectLightbox') closeProjectLightbox();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeProjectLightbox();
+  });
+</script>
 </body>
 </html>

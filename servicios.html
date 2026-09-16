@@ -29,7 +29,7 @@
       <button data-categoria="outdoor">Exteriores</button>
       <button data-categoria="deportivos">Pisos Deportivos</button>
     </div>
-    <div id="servicesGroups"></div>
+    <div class="grid grid-3" id="servicesGrid"></div>
   </div>
 </section>
 
@@ -58,13 +58,13 @@
 <script src="js/common.js"></script>
 <script>
   function serviceCardHTML(s) {
-    const modulo = encodeURIComponent(s.categories.includes('Outdoors') ? 'Outdoors / Decks' : (s.categories[0] || ''));
+    const modulo = encodeURIComponent(s.categories.includes('Outdoors') ? 'Exteriores / Decks' : (s.categories[0] || ''));
     return `
       <div class="card">
         <a href="servicio.html?id=${s.id}"><div class="card-img ph ${ladImgClass(s.img)}" style="${ladImgBg(s.img)}">${ladIsImageUrl(s.img) ? '' : `<span class="ph-tag">Foto: ${s.name.toLowerCase()}</span>`}</div></a>
         <div class="card-body">
-          ${s.categories.map(c => `<span class="badge badge-outline">${ladServiceCategoryLabel(c)}</span>`).join(' ')}
-          <h3 style="margin-top:10px;"><a href="servicio.html?id=${s.id}">${s.name}</a></h3>
+          <div class="service-tags">${s.categories.map(c => `<span class="badge badge-outline badge-sm">${ladServiceCategoryLabel(c)}</span>`).join('')}</div>
+          <h3 style="margin-top:8px;"><a href="servicio.html?id=${s.id}">${s.name}</a></h3>
           <p>${s.shortDescription}</p>
         </div>
         <div class="card-footer">
@@ -77,19 +77,13 @@
   let currentCategoria = 'todos';
   let allServices = [];
 
-  function renderServiceGroups() {
-    const groups = currentCategoria === 'todos' ? SERVICE_GROUPS : SERVICE_GROUPS.filter(g => g.slug === currentCategoria);
-    document.getElementById('servicesGroups').innerHTML = groups.map(g => {
-      const items = allServices.filter(s => s.categories.includes(g.category));
-      const body = items.length
-        ? `<div class="grid grid-3">${items.map(serviceCardHTML).join('')}</div>`
-        : `<p style="color:#8199a3;">Próximamente vamos a sumar servicios en esta categoría. Consultanos si necesitás algo puntual.</p>`;
-      return `
-        <div id="${g.slug}" class="service-group" style="margin-bottom:48px;">
-          <h2 style="margin-bottom:20px;">${g.label}</h2>
-          ${body}
-        </div>`;
-    }).join('');
+  function renderServices() {
+    const group = SERVICE_GROUPS.find(g => g.slug === currentCategoria);
+    const items = group ? allServices.filter(s => s.categories.includes(group.category)) : allServices;
+    const grid = document.getElementById('servicesGrid');
+    grid.innerHTML = items.length
+      ? items.map(serviceCardHTML).join('')
+      : '<p style="grid-column:1/-1;text-align:center;color:#8199a3;">No hay servicios en esta categoría por el momento.</p>';
   }
 
   document.querySelectorAll('#categoryFilters button').forEach(btn => {
@@ -97,7 +91,7 @@
       document.querySelectorAll('#categoryFilters button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentCategoria = btn.dataset.categoria;
-      renderServiceGroups();
+      renderServices();
     });
   });
 
@@ -110,7 +104,7 @@
       b.classList.toggle('active', b.dataset.categoria === currentCategoria);
     });
 
-    renderServiceGroups();
+    renderServices();
   })();
 </script>
 </body>
