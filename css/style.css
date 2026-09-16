@@ -370,11 +370,11 @@ img { max-width: 100%; display: block; }
 .floating-badge {
   position: absolute;
   border-radius: var(--radius);
-  padding: 16px 20px;
+  padding: 20px 26px;
   z-index: 4;
   animation: lad-float 5s ease-in-out infinite;
 }
-.floating-badge strong { display: block; font-size: 1.5rem; color: var(--navy); line-height: 1; }
+.floating-badge strong { display: block; font-size: 1.5rem; color: var(--navy); line-height: 1; margin-bottom: 6px; }
 .floating-badge.glass-dark strong { color: var(--cream); }
 .floating-badge span { font-size: 0.78rem; color: #5C7784; letter-spacing: 0.3px; }
 .floating-badge.glass-dark span { color: var(--powder-blue); }
