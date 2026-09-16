@@ -151,9 +151,10 @@
       description: '200 m² de Lapacho con varillas de bronce restaurados desde cero. Recambio de tablas por antigüedad y recuperación del brillo original.'
     },
     {
+      cover: 'assets/img/proyecto-terraza-deck-1.jpeg',
       images: [
-        'assets/img/proyecto-terraza-deck-1.jpeg',
         'assets/img/proyecto-terraza-deck-2.jpeg',
+        'assets/img/proyecto-terraza-deck-1.jpeg',
         'assets/img/proyecto-terraza-deck-3.jpeg'
       ],
       wood: 'Exteriores',
@@ -161,11 +162,12 @@
       description: 'Deck recuperado desde un tono oscurecido a su color natural. Pulido y tratamiento con productos Bona aptos para intemperie y UV.'
     },
     {
+      cover: 'assets/img/proyecto-squash-4.jpeg',
       images: [
-        'assets/img/proyecto-squash-4.jpeg',
         'assets/img/proyecto-squash-2.jpeg',
         'assets/img/proyecto-squash-3.jpeg',
-        'assets/img/proyecto-squash-1.jpeg'
+        'assets/img/proyecto-squash-1.jpeg',
+        'assets/img/proyecto-squash-4.jpeg'
       ],
       wood: 'Pisos Deportivos',
       title: 'Cancha de Squash',
@@ -184,14 +186,14 @@
     }
   ];
 
-  function projectCoverStyle(p) {
-    return p.images.length ? `background-image:url('${p.images[0]}');` : '';
+  function projectCover(p) {
+    return p.cover || p.images[0] || null;
   }
 
   document.getElementById('projectsGrid').innerHTML = PROJECTS.map((p, i) => `
     <div class="card" style="cursor:pointer;" onclick="openProjectLightbox(${i})">
-      <div class="card-img ph ${p.images.length ? '' : 'ph-3'}" style="${projectCoverStyle(p)}">
-        ${p.images.length ? '' : `<span class="ph-tag">Foto: ${p.title.toLowerCase()}</span>`}
+      <div class="card-img ph ${projectCover(p) ? '' : 'ph-3'}" style="${projectCover(p) ? `background-image:url('${projectCover(p)}');` : ''}">
+        ${projectCover(p) ? '' : `<span class="ph-tag">Foto: ${p.title.toLowerCase()}</span>`}
       </div>
       <div class="card-body">
         <span class="badge badge-outline">${p.wood}</span>
