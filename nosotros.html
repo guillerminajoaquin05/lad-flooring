@@ -89,7 +89,8 @@
     <button type="button" class="lightbox-close" onclick="closeProjectLightbox()" aria-label="Cerrar">✕</button>
     <div class="lightbox-img" id="lightboxImg"></div>
     <div class="lightbox-body">
-      <span class="badge badge-outline" id="lightboxWood"></span>
+      <div class="gallery-thumbs" id="lightboxThumbs" style="display:none;"></div>
+      <span class="badge badge-outline" id="lightboxWood" style="margin-top:14px;display:inline-block;"></span>
       <h3 style="margin-top:10px;" id="lightboxTitle"></h3>
       <p id="lightboxDesc"></p>
     </div>
@@ -114,34 +115,52 @@
 <script>
   const PROJECTS = [
     {
-      img: 'assets/img/proyecto-recoleta.jpeg',
+      images: ['assets/img/proyecto-recoleta.jpeg'],
       wood: 'Roble de Slavonia',
       title: 'Departamento residencial',
       description: 'Parquet de Roble de Slavonia, 300 m². Renovación completa con hidrolaqueado de alto rendimiento.'
     },
     {
-      img: 'assets/img/proyecto-talcahuano.jpg',
+      images: ['assets/img/proyecto-talcahuano.jpg'],
       wood: 'Eucalipto',
       title: 'Departamento residencial',
       description: 'Piso de Eucalipto, 80 m². Recambio de tablas, pulido y tratamiento combinado con craft oil y terminación con hidrolaqueado.'
     },
     {
-      img: 'assets/img/proyecto-miguel-cane.jpeg',
+      images: ['assets/img/proyecto-miguel-cane.jpeg'],
       wood: 'Lapacho en Salto',
       title: 'Parquet Palermo',
       description: '200 m² de Lapacho con varillas de bronce restaurados desde cero. Recambio de tablas por antigüedad y recuperación del brillo original.'
     },
     {
-      img: 'assets/img/proyecto-terraza-deck.jpg',
+      images: ['assets/img/proyecto-terraza-deck.jpg'],
       wood: 'Exteriores',
       title: 'Terraza deck',
       description: 'Deck recuperado desde un tono oscurecido a su color natural. Pulido y tratamiento con productos Bona aptos para intemperie y UV.'
+    },
+    {
+      images: [],
+      wood: 'Pisos Deportivos',
+      title: 'Cancha de Squash',
+      description: 'Cancha de Squash recuperada desde cero. Recambio de madera, colocación, pulido e hidrolaqueado de alto rendimiento.'
+    },
+    {
+      images: [],
+      wood: 'Pisos Deportivos',
+      title: 'Gym',
+      description: 'Reparación y recambio puntual de tablas, pulido e hidrolaqueado de alto tráfico.'
     }
   ];
 
+  function projectCoverStyle(p) {
+    return p.images.length ? `background-image:url('${p.images[0]}');` : '';
+  }
+
   document.getElementById('projectsGrid').innerHTML = PROJECTS.map((p, i) => `
     <div class="card" style="cursor:pointer;" onclick="openProjectLightbox(${i})">
-      <div class="card-img" style="background-image:url('${p.img}');"></div>
+      <div class="card-img ph ${p.images.length ? '' : 'ph-3'}" style="${projectCoverStyle(p)}">
+        ${p.images.length ? '' : `<span class="ph-tag">Foto: ${p.title.toLowerCase()}</span>`}
+      </div>
       <div class="card-body">
         <span class="badge badge-outline">${p.wood}</span>
         <h3 style="margin-top:10px;">${p.title}</h3>
@@ -150,12 +169,42 @@
     </div>
   `).join('');
 
+  function setLightboxImage(url) {
+    const img = document.getElementById('lightboxImg');
+    if (url) {
+      img.className = 'lightbox-img';
+      img.style.backgroundImage = `url('${url}')`;
+    } else {
+      img.className = 'lightbox-img ph ph-3';
+      img.style.backgroundImage = '';
+    }
+  }
+
   function openProjectLightbox(i) {
     const p = PROJECTS[i];
-    document.getElementById('lightboxImg').style.backgroundImage = `url('${p.img}')`;
+    setLightboxImage(p.images[0]);
     document.getElementById('lightboxWood').textContent = p.wood;
     document.getElementById('lightboxTitle').textContent = p.title;
     document.getElementById('lightboxDesc').textContent = p.description;
+
+    const thumbsWrap = document.getElementById('lightboxThumbs');
+    if (p.images.length > 1) {
+      thumbsWrap.style.display = 'flex';
+      thumbsWrap.innerHTML = p.images.map((url, idx) => `
+        <div class="gallery-thumb ${idx === 0 ? 'active' : ''}" style="background-image:url('${url.replace(/'/g, "%27")}');" data-url="${url}"></div>
+      `).join('');
+      thumbsWrap.querySelectorAll('.gallery-thumb').forEach(thumb => {
+        thumb.addEventListener('click', () => {
+          thumbsWrap.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+          thumb.classList.add('active');
+          setLightboxImage(thumb.dataset.url);
+        });
+      });
+    } else {
+      thumbsWrap.style.display = 'none';
+      thumbsWrap.innerHTML = '';
+    }
+
     document.getElementById('projectLightbox').classList.add('open');
   }
   function closeProjectLightbox() {
