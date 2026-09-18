@@ -7,6 +7,7 @@ function ladMapService(row) {
     category: row.category,
     categories: (row.categories && row.categories.length) ? row.categories : (row.category ? [row.category] : []),
     sortOrder: row.sort_order,
+    parentId: row.parent_id || null,
     img: row.image_url,
     shortDescription: row.short_description,
     description: row.description,

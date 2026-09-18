@@ -217,6 +217,11 @@
         <div id="sCategoriesWrap" style="display:flex;gap:16px;flex-wrap:wrap;"></div>
       </div>
       <div class="field">
+        <label>Dentro de la tarjeta (opcional)</label>
+        <select id="sParent"></select>
+        <p style="font-size:0.78rem;color:#8199a3;margin:6px 0 0;">Si elegís una tarjeta, este servicio deja de verse en la lista principal y aparece al abrir esa tarjeta. Dejalo en "Ninguna" para que sea una tarjeta principal.</p>
+      </div>
+      <div class="field">
         <label>Orden (opcional)</label>
         <input type="number" id="sSortOrder" placeholder="Ej: 1">
         <p style="font-size:0.78rem;color:#8199a3;margin:6px 0 0;">Define en qué lugar aparece dentro de "Servicios" (menor número primero). Dejalo vacío para que aparezca al final, ordenado por nombre.</p>
@@ -706,7 +711,7 @@
     document.getElementById('adminServicesTbody').innerHTML = adminServices.map(s => `
       <tr>
         <td><div class="admin-thumb ph ${ladImgClass(s.img)}" style="${ladImgBg(s.img)}"></div></td>
-        <td>${s.name}</td>
+        <td>${s.name}${s.parentId ? `<div style="font-size:0.78rem;color:#8199a3;">dentro de: ${(adminServices.find(p => p.id === s.parentId) || {}).name || '—'}</div>` : ''}</td>
         <td>${(s.categories || []).map(ladServiceCategoryLabel).join(', ') || '—'}</td>
         <td><span class="status-dot ${s.hidden ? 'hidden-status' : ''}">${s.hidden ? 'Oculto' : 'Visible'}</span></td>
         <td>
@@ -726,10 +731,32 @@
     </label>
   `).join('');
 
+  /* Llena el select "Dentro de la tarjeta" sin permitir elegir el propio servicio
+     ni ninguno de sus descendientes (evita ciclos). */
+  function fillParentSelect(selfId, selectedId) {
+    const blocked = new Set();
+    if (selfId) {
+      blocked.add(selfId);
+      let grew = true;
+      while (grew) {
+        grew = false;
+        adminServices.forEach(s => {
+          if (s.parentId && blocked.has(s.parentId) && !blocked.has(s.id)) { blocked.add(s.id); grew = true; }
+        });
+      }
+    }
+    const sel = document.getElementById('sParent');
+    sel.innerHTML = '<option value="">Ninguna (tarjeta principal)</option>' +
+      adminServices.filter(s => !blocked.has(s.id))
+        .map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    sel.value = selectedId || '';
+  }
+
   document.getElementById('btnNuevoServicio').addEventListener('click', () => {
     document.getElementById('serviceModalTitle').textContent = 'Agregar servicio';
     document.getElementById('serviceForm').reset();
     document.getElementById('sId').value = '';
+    fillParentSelect(null, null);
     document.querySelectorAll('.sCategoryChk').forEach(chk => chk.checked = false);
     document.getElementById('sImgMsg').textContent = '';
     ladUpdateImgPreview('sImgPreview', 'ph-1');
@@ -745,6 +772,7 @@
     document.querySelectorAll('.sCategoryChk').forEach(chk => {
       chk.checked = (s.categories || []).includes(chk.value);
     });
+    fillParentSelect(s.id, s.parentId);
     document.getElementById('sSortOrder').value = s.sortOrder != null ? s.sortOrder : '';
     document.getElementById('sImg').value = s.img;
     document.getElementById('sImgPlaceholder').value = ladIsImageUrl(s.img) ? 'ph-1' : s.img;
@@ -783,6 +811,7 @@
       name: document.getElementById('sName').value,
       category: categories[0],
       categories,
+      parent_id: document.getElementById('sParent').value || null,
       sort_order: document.getElementById('sSortOrder').value !== '' ? parseInt(document.getElementById('sSortOrder').value) : null,
       image_url: document.getElementById('sImg').value,
       short_description: document.getElementById('sShortDescription').value,

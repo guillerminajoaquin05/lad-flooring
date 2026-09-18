@@ -23,6 +23,11 @@
 
 <section class="section">
   <div class="container">
+    <div id="groupHeader" style="display:none;margin-bottom:var(--space-4);">
+      <div class="breadcrumb"><a href="servicios.html" id="groupBack">← Volver a Servicios</a></div>
+      <h2 id="groupTitle" style="margin-top:8px;"></h2>
+      <p id="groupDesc" style="white-space:pre-line;"></p>
+    </div>
     <div class="tag-filters" id="categoryFilters">
       <button data-categoria="todos" class="active">Todos</button>
       <button data-categoria="madera">Pisos de Madera</button>
@@ -57,29 +62,45 @@
 <script src="js/auth.js"></script>
 <script src="js/common.js"></script>
 <script>
+  function childrenOf(id) {
+    return allServices.filter(s => s.parentId === id);
+  }
+
   function serviceCardHTML(s) {
     const modulo = encodeURIComponent(s.categories.includes('Outdoors') ? 'Exteriores / Decks' : (s.categories[0] || ''));
+    const kids = childrenOf(s.id).length;
+    const href = kids ? `servicios.html?padre=${encodeURIComponent(s.id)}` : `servicio.html?id=${s.id}`;
     return `
       <div class="card">
-        <a href="servicio.html?id=${s.id}"><div class="card-img ph service-photo ${ladImgClass(s.img)}" style="${ladImgBg(s.img)}">${ladIsImageUrl(s.img) ? '' : `<span class="ph-tag">Foto: ${s.name.toLowerCase()}</span>`}</div></a>
+        <a href="${href}"><div class="card-img ph service-photo ${ladImgClass(s.img)}" style="${ladImgBg(s.img)}">${ladIsImageUrl(s.img) ? '' : `<span class="ph-tag">Foto: ${s.name.toLowerCase()}</span>`}</div></a>
         <div class="card-body">
           <div class="service-tags">${s.categories.map(c => `<span class="badge badge-outline badge-sm">${ladServiceCategoryLabel(c)}</span>`).join('')}</div>
-          <h3 style="margin-top:8px;"><a href="servicio.html?id=${s.id}">${s.name}</a></h3>
+          <h3 style="margin-top:8px;"><a href="${href}">${s.name}</a></h3>
           <p>${s.shortDescription}</p>
         </div>
         <div class="card-footer">
-          <a href="servicio.html?id=${s.id}" class="btn btn-outline btn-sm" style="color:var(--navy);border-color:var(--navy);">Ver más</a>
-          <a href="cotizacion.html?modulo=${modulo}" class="btn btn-primary btn-sm">Consultar</a>
+          ${kids
+            ? `<a href="${href}" class="btn btn-primary btn-sm">Ver opciones (${kids})</a>`
+            : `<a href="${href}" class="btn btn-outline btn-sm" style="color:var(--navy);border-color:var(--navy);">Ver más</a>
+               <a href="cotizacion.html?modulo=${modulo}" class="btn btn-primary btn-sm">Consultar</a>`}
         </div>
       </div>`;
   }
 
   let currentCategoria = 'todos';
+  let currentPadre = null;
   let allServices = [];
 
   function renderServices() {
-    const group = SERVICE_GROUPS.find(g => g.slug === currentCategoria);
-    const items = group ? allServices.filter(s => s.categories.includes(group.category)) : allServices;
+    let items;
+    if (currentPadre) {
+      items = childrenOf(currentPadre);
+    } else {
+      const group = SERVICE_GROUPS.find(g => g.slug === currentCategoria);
+      /* Solo las tarjetas de primer nivel; las que están dentro de otra se ven al abrirla. */
+      const topLevel = allServices.filter(s => !s.parentId || !allServices.some(p => p.id === s.parentId));
+      items = group ? topLevel.filter(s => s.categories.includes(group.category)) : topLevel;
+    }
     const grid = document.getElementById('servicesGrid');
     grid.innerHTML = items.length
       ? items.map(serviceCardHTML).join('')
@@ -103,6 +124,17 @@
     document.querySelectorAll('#categoryFilters button').forEach(b => {
       b.classList.toggle('active', b.dataset.categoria === currentCategoria);
     });
+
+    const padre = allServices.find(s => s.id === params.get('padre'));
+    if (padre) {
+      currentPadre = padre.id;
+      document.getElementById('categoryFilters').style.display = 'none';
+      document.getElementById('groupHeader').style.display = 'block';
+      document.getElementById('groupTitle').textContent = padre.name;
+      document.getElementById('groupDesc').textContent = padre.shortDescription || '';
+      if (padre.parentId) document.getElementById('groupBack').href = `servicios.html?padre=${encodeURIComponent(padre.parentId)}`;
+      document.title = padre.name + ' — Lad Flooring';
+    }
 
     renderServices();
   })();
