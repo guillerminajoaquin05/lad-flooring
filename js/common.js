@@ -165,7 +165,7 @@ const LAD_TIER_LABELS = { interiores: 'Interiores', exteriores: 'Exteriores' };
 function ladRenderUsageList(text) {
   const lines = (text || '').split('\n').map(v => v.trim()).filter(Boolean);
   return `<ul class="includes-list">${lines.map(line => {
-    const isNumbered = /^\d+[.)]/.test(line);
+    const isNumbered = /^\d+[.)]/.test(line) || /^-\s/.test(line);
     return `<li${isNumbered ? ' class="plain"' : ''}>${line}</li>`;
   }).join('')}</ul>`;
 }
