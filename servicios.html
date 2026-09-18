@@ -27,6 +27,7 @@
       <div class="breadcrumb"><a href="servicios.html" id="groupBack">← Volver a Servicios</a></div>
       <h2 id="groupTitle" style="margin-top:8px;"></h2>
       <p id="groupDesc" style="white-space:pre-line;"></p>
+      <div id="groupExtra"></div>
     </div>
     <div class="tag-filters" id="categoryFilters">
       <button data-categoria="todos" class="active">Todos</button>
@@ -131,7 +132,12 @@
       document.getElementById('categoryFilters').style.display = 'none';
       document.getElementById('groupHeader').style.display = 'block';
       document.getElementById('groupTitle').textContent = padre.name;
-      document.getElementById('groupDesc').textContent = padre.shortDescription || '';
+      document.getElementById('groupDesc').textContent = padre.description || padre.shortDescription || '';
+      const modulo = encodeURIComponent(padre.categories.includes('Outdoors') ? 'Exteriores / Decks' : (padre.categories[0] || ''));
+      document.getElementById('groupExtra').innerHTML = `
+        ${padre.includes.length ? `<h4>¿Qué incluye?</h4><ul class="includes-list">${padre.includes.map(i => `<li>${i}</li>`).join('')}</ul>` : ''}
+        ${padre.usageInfo && padre.usageInfo.trim() ? `<h4>Información adicional</h4>${ladRenderUsageList(padre.usageInfo)}` : ''}
+        <a href="cotizacion.html?modulo=${modulo}" class="btn btn-primary" style="margin-top:12px;">Solicitar cotización</a>`;
       if (padre.parentId) document.getElementById('groupBack').href = `servicios.html?padre=${encodeURIComponent(padre.parentId)}`;
       document.title = padre.name + ' — Lad Flooring';
     }
