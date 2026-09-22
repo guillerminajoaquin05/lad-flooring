@@ -140,6 +140,15 @@
         <button class="btn btn-outline" style="color:var(--navy);border-color:var(--navy);" id="btnExportSuscriptores">Exportar CSV</button>
       </div>
       <p style="font-size:0.85rem;color:#8199a3;margin-top:-8px;">Se suscriben desde el formulario del pie de página del sitio, sin necesidad de crear una cuenta.</p>
+
+      <div class="admin-table-wrap" style="padding:20px 24px;margin-bottom:24px;">
+        <h4 style="margin-top:0;">Enviar un email a todos los suscriptores</h4>
+        <div class="field"><label>Asunto</label><input type="text" id="nlSubject" placeholder="Ej: Novedades de Lad Flooring"></div>
+        <div class="field"><label>Mensaje</label><textarea id="nlMessage" rows="6" placeholder="Escribí el mensaje para tus suscriptores..."></textarea></div>
+        <button class="btn btn-primary" id="btnSendNewsletter">Enviar a todos los suscriptores</button>
+        <p id="nlStatus" style="font-size:0.85rem;margin-top:10px;"></p>
+      </div>
+
       <div class="admin-table-wrap" style="overflow-x:auto;">
         <table class="admin-table">
           <thead>
@@ -991,6 +1000,32 @@
     if (error) { alert('No pudimos eliminar el suscriptor: ' + error.message); return; }
     await loadAdminSuscriptores();
   }
+
+  document.getElementById('btnSendNewsletter').addEventListener('click', async () => {
+    const subject = document.getElementById('nlSubject').value.trim();
+    const message = document.getElementById('nlMessage').value.trim();
+    const status = document.getElementById('nlStatus');
+    if (!subject || !message) { alert('Completá el asunto y el mensaje.'); return; }
+    if (adminSuscriptores.length === 0) { alert('Todavía no hay suscriptores para enviarles nada.'); return; }
+    if (!confirm(`¿Enviar este email a los ${adminSuscriptores.length} suscriptores? Esta acción no se puede deshacer.`)) return;
+
+    const btn = document.getElementById('btnSendNewsletter');
+    btn.disabled = true;
+    status.style.color = '#8199a3';
+    status.textContent = 'Enviando...';
+
+    const { data, error } = await ladSupabase.functions.invoke('send-newsletter', { body: { subject, message } });
+    btn.disabled = false;
+
+    if (error) {
+      status.style.color = '#A94442';
+      status.textContent = 'No pudimos enviar el newsletter: ' + error.message;
+      return;
+    }
+    status.style.color = '#3d8a5c';
+    status.textContent = `Enviado a ${data.sent} de ${adminSuscriptores.length} suscriptores.` +
+      (data.failed && data.failed.length ? ` Falló con: ${data.failed.join(', ')}` : '');
+  });
 
   document.getElementById('btnExportSuscriptores').addEventListener('click', () => {
     if (adminSuscriptores.length === 0) { alert('Todavía no hay suscriptores para exportar.'); return; }
