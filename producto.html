@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Producto — Lad Flooring</title>
+<meta name="description" id="metaDescription" content="Productos Bona originales para el cuidado de pisos de madera.">
+<meta property="og:title" id="ogTitle" content="Producto — Lad Flooring">
+<meta property="og:description" id="ogDescription" content="Productos Bona originales para el cuidado de pisos de madera.">
+<meta property="og:type" content="product">
+<meta property="og:image" id="ogImage" content="https://ladflooring.com/assets/img/living-piso-natural.jpeg">
 <link rel="icon" href="assets/img/logo-mark.svg">
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -54,6 +59,11 @@
 
   document.title = product.name + ' — Lad Flooring';
   document.getElementById('crumbName').textContent = product.name;
+  const productSummary = (product.description || '').slice(0, 155);
+  document.getElementById('metaDescription').setAttribute('content', productSummary);
+  document.getElementById('ogTitle').setAttribute('content', product.name + ' — Lad Flooring');
+  document.getElementById('ogDescription').setAttribute('content', productSummary);
+  if (ladIsImageUrl(product.img)) document.getElementById('ogImage').setAttribute('content', product.img);
 
   const variantsHTML = product.variantOptions.length > 0 ? `
     <div style="margin:14px 0 20px;">

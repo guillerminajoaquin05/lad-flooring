@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Servicio — Lad Flooring</title>
+<meta name="description" id="metaDescription" content="Conocé este servicio de Lad Flooring para pisos de madera.">
+<meta property="og:title" id="ogTitle" content="Servicio — Lad Flooring">
+<meta property="og:description" id="ogDescription" content="Conocé este servicio de Lad Flooring para pisos de madera.">
+<meta property="og:type" content="website">
+<meta property="og:image" id="ogImage" content="https://ladflooring.com/assets/img/living-piso-natural.jpeg">
 <link rel="icon" href="assets/img/logo-mark.svg">
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -55,6 +60,11 @@
 
   document.title = service.name + ' — Lad Flooring';
   document.getElementById('crumbName').textContent = service.name;
+  const serviceSummary = (service.shortDescription || service.description || '').slice(0, 155);
+  document.getElementById('metaDescription').setAttribute('content', serviceSummary);
+  document.getElementById('ogTitle').setAttribute('content', service.name + ' — Lad Flooring');
+  document.getElementById('ogDescription').setAttribute('content', serviceSummary);
+  if (ladIsImageUrl(service.img)) document.getElementById('ogImage').setAttribute('content', service.img);
 
   document.getElementById('serviceDetail').innerHTML = `
     <div>

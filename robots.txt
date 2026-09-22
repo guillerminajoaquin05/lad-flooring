@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /usuario.html
+Disallow: /carrito.html
+Disallow: /checkout.html
+Disallow: /envio.html
+
+Sitemap: https://ladflooring.com/sitemap.xml
