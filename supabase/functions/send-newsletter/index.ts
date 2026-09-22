@@ -40,7 +40,11 @@ Deno.serve(async (req) => {
     if (userError || !userData.user) return json({ error: 'No autenticado' }, 401);
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const { data: profile } = await admin.from('profiles').select('role').eq('id', userData.user.id).single();
+    const { data: profile, error: profileError } = await admin.from('profiles').select('role').eq('id', userData.user.id).single();
+    if (profileError) {
+      console.error('Error consultando el perfil del usuario:', profileError);
+      return json({ error: 'Error verificando permisos: ' + profileError.message }, 500);
+    }
     if (!profile || profile.role !== 'admin') return json({ error: 'No tenés permisos de administrador' }, 403);
 
     // 2. Validamos el contenido del email.
