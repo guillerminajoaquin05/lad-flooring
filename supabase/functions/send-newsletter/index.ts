@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     if (!profile || profile.role !== 'admin') return json({ error: 'No tenés permisos de administrador' }, 403);
 
     // 2. Validamos el contenido del email.
-    const { subject, message } = await req.json();
+    const { subject, message, imageUrl } = await req.json();
     if (!subject || !message) return json({ error: 'Falta el asunto o el mensaje' }, 400);
 
     // 3. Mandamos un email individual a cada suscriptor.
@@ -63,6 +63,7 @@ Deno.serve(async (req) => {
       const unsubscribeUrl = `${SUPABASE_URL}/functions/v1/unsubscribe?id=${sub.id}`;
       const html = `
         <div style="font-family:Georgia,'Georgia Pro',serif;color:#1D3A47;max-width:560px;margin:0 auto;padding:24px;">
+          ${imageUrl ? `<img src="${imageUrl}" alt="" style="max-width:100%;border-radius:8px;margin-bottom:20px;display:block;">` : ''}
           <p style="white-space:pre-line;color:#3C5763;">${message}</p>
           <p style="margin-top:28px;color:#8199a3;font-size:0.8rem;">
             Lad Flooring — Pisos de Madera<br>
@@ -79,6 +80,16 @@ Deno.serve(async (req) => {
       if (res.ok) sent++;
       else failed.push(sub.email);
     }
+
+    // 4. Guardamos el envío en el historial para poder revisarlo después desde el admin.
+    const { error: historyError } = await admin.from('newsletter_sends').insert({
+      subject,
+      message,
+      image_url: imageUrl || null,
+      sent_count: sent,
+      recipient_count: subscribers.length,
+    });
+    if (historyError) console.error('Error guardando el historial del newsletter:', historyError);
 
     return json({ ok: true, sent, failed });
   } catch (err) {

@@ -145,8 +145,35 @@
         <h4 style="margin-top:0;">Enviar un email a todos los suscriptores</h4>
         <div class="field"><label>Asunto</label><input type="text" id="nlSubject" placeholder="Ej: Novedades de Lad Flooring"></div>
         <div class="field"><label>Mensaje</label><textarea id="nlMessage" rows="6" placeholder="Escribí el mensaje para tus suscriptores..."></textarea></div>
+        <div class="field">
+          <label>Imagen (opcional)</label>
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:6px;">
+            <div class="ph admin-thumb" id="nlImgPreview" style="width:64px;height:64px;flex-shrink:0;display:none;"></div>
+            <div style="flex:1;">
+              <input type="file" id="nlImgFile" accept="image/*">
+              <div id="nlImgMsg" style="font-size:0.78rem;color:#8199a3;margin-top:4px;"></div>
+            </div>
+            <button type="button" class="btn btn-outline" style="color:var(--navy);border-color:var(--navy);display:none;" id="btnQuitarImgNewsletter">Quitar</button>
+          </div>
+          <input type="hidden" id="nlImageUrl" value="">
+          <p style="font-size:0.78rem;color:#8199a3;margin:0;">Si subís una imagen, aparece arriba del texto en el email.</p>
+        </div>
         <button class="btn btn-primary" id="btnSendNewsletter">Enviar a todos los suscriptores</button>
         <p id="nlStatus" style="font-size:0.85rem;margin-top:10px;"></p>
+      </div>
+
+      <div class="admin-table-wrap" style="overflow-x:auto;margin-bottom:24px;">
+        <div style="padding:20px 24px 0;"><h4 style="margin:0 0 4px;">Historial de envíos</h4><p style="font-size:0.85rem;color:#8199a3;margin:0 0 16px;">Tocá una fila para ver el email completo.</p></div>
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Asunto</th>
+              <th>Fecha de envío</th>
+              <th>Destinatarios</th>
+            </tr>
+          </thead>
+          <tbody id="adminNewsletterSendsTbody"></tbody>
+        </table>
       </div>
 
       <div class="admin-table-wrap" style="overflow-x:auto;">
@@ -166,6 +193,18 @@
 </section>
 
 <div id="lad-footer"></div>
+
+<!-- Modal: ver un envío de newsletter ya mandado -->
+<div class="modal-overlay" id="newsletterSendModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('newsletterSendModal')">✕</button>
+    <h3 id="nsModalSubject" style="margin-bottom:4px;"></h3>
+    <p id="nsModalMeta" style="font-size:0.82rem;color:#8199a3;margin-top:0;"></p>
+    <div class="divider"></div>
+    <img id="nsModalImg" style="max-width:100%;border-radius:var(--radius);margin-bottom:16px;display:none;">
+    <p id="nsModalBody" style="white-space:pre-line;"></p>
+  </div>
+</div>
 
 <!-- Modal: alta / edición de producto -->
 <div class="modal-overlay" id="productModal">
@@ -1001,9 +1040,44 @@
     await loadAdminSuscriptores();
   }
 
+  // Imagen opcional para el newsletter — reusa el mismo bucket que productos/servicios.
+  document.getElementById('nlImgFile').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const msg = document.getElementById('nlImgMsg');
+    msg.style.color = '#5C7784';
+    msg.textContent = 'Subiendo...';
+    try {
+      const url = await ladUploadImage(file, 'newsletter');
+      document.getElementById('nlImageUrl').value = url;
+      const preview = document.getElementById('nlImgPreview');
+      preview.className = 'ph admin-thumb has-photo';
+      preview.style.backgroundImage = `url('${url.replace(/'/g, "%27")}')`;
+      preview.style.display = 'inline-block';
+      document.getElementById('btnQuitarImgNewsletter').style.display = 'inline-block';
+      msg.style.color = '#3d8a5c';
+      msg.textContent = '¡Imagen subida!';
+    } catch (err) {
+      msg.style.color = '#A94442';
+      msg.textContent = 'Error subiendo la imagen: ' + err.message;
+    }
+  });
+
+  function resetNewsletterImage() {
+    document.getElementById('nlImageUrl').value = '';
+    document.getElementById('nlImgFile').value = '';
+    document.getElementById('nlImgMsg').textContent = '';
+    const preview = document.getElementById('nlImgPreview');
+    preview.style.display = 'none';
+    preview.style.backgroundImage = '';
+    document.getElementById('btnQuitarImgNewsletter').style.display = 'none';
+  }
+  document.getElementById('btnQuitarImgNewsletter').addEventListener('click', resetNewsletterImage);
+
   document.getElementById('btnSendNewsletter').addEventListener('click', async () => {
     const subject = document.getElementById('nlSubject').value.trim();
     const message = document.getElementById('nlMessage').value.trim();
+    const imageUrl = document.getElementById('nlImageUrl').value || null;
     const status = document.getElementById('nlStatus');
     if (!subject || !message) { alert('Completá el asunto y el mensaje.'); return; }
     if (adminSuscriptores.length === 0) { alert('Todavía no hay suscriptores para enviarles nada.'); return; }
@@ -1014,7 +1088,7 @@
     status.style.color = '#8199a3';
     status.textContent = 'Enviando...';
 
-    const { data, error } = await ladSupabase.functions.invoke('send-newsletter', { body: { subject, message } });
+    const { data, error } = await ladSupabase.functions.invoke('send-newsletter', { body: { subject, message, imageUrl } });
     btn.disabled = false;
 
     if (error) {
@@ -1025,7 +1099,50 @@
     status.style.color = '#3d8a5c';
     status.textContent = `Enviado a ${data.sent} de ${adminSuscriptores.length} suscriptores.` +
       (data.failed && data.failed.length ? ` Falló con: ${data.failed.join(', ')}` : '');
+
+    document.getElementById('nlSubject').value = '';
+    document.getElementById('nlMessage').value = '';
+    resetNewsletterImage();
+    await loadAdminNewsletterSends();
   });
+
+  // ---------- Historial de envíos del newsletter ----------
+  let adminNewsletterSends = [];
+
+  async function loadAdminNewsletterSends() {
+    const { data, error } = await ladSupabase
+      .from('newsletter_sends')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) { console.error('No pudimos cargar el historial de envíos:', error.message); return; }
+    adminNewsletterSends = data;
+    renderAdminNewsletterSendsTable();
+  }
+
+  function renderAdminNewsletterSendsTable() {
+    document.getElementById('adminNewsletterSendsTbody').innerHTML = adminNewsletterSends.length
+      ? adminNewsletterSends.map(s => `
+        <tr style="cursor:pointer;" onclick="openNewsletterSendModal('${s.id}')">
+          <td>${s.subject}</td>
+          <td>${new Date(s.created_at).toLocaleString('es-AR')}</td>
+          <td>${s.sent_count} / ${s.recipient_count}</td>
+        </tr>
+      `).join('')
+      : '<tr><td colspan="3" style="text-align:center;color:#8199a3;">Todavía no enviaste ningún newsletter.</td></tr>';
+  }
+
+  function openNewsletterSendModal(id) {
+    const s = adminNewsletterSends.find(x => String(x.id) === String(id));
+    if (!s) return;
+    document.getElementById('nsModalSubject').textContent = s.subject;
+    document.getElementById('nsModalMeta').textContent =
+      `Enviado el ${new Date(s.created_at).toLocaleString('es-AR')} a ${s.sent_count} de ${s.recipient_count} suscriptores`;
+    const img = document.getElementById('nsModalImg');
+    if (s.image_url) { img.src = s.image_url; img.style.display = 'block'; }
+    else { img.style.display = 'none'; }
+    document.getElementById('nsModalBody').textContent = s.message;
+    openModal('newsletterSendModal');
+  }
 
   document.getElementById('btnExportSuscriptores').addEventListener('click', () => {
     if (adminSuscriptores.length === 0) { alert('Todavía no hay suscriptores para exportar.'); return; }
@@ -1056,6 +1173,7 @@
     loadAdminServices();
     loadAdminFaqs();
     loadAdminSuscriptores();
+    loadAdminNewsletterSends();
   })();
 </script>
 </body>
