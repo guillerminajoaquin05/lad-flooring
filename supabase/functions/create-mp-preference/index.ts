@@ -136,18 +136,18 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        items: pricedItems.map((i) => ({
-          title: i.variant ? `${i.name} (${i.variant})` : i.name,
-          quantity: i.qty,
-          // Si hay descuento, se prorratea en el precio unitario (Mercado Pago no admite ítems con precio negativo).
-          unit_price: discountPct > 0 ? Math.round(i.price * (1 - discountPct) * 100) / 100 : i.price,
-          currency_id: 'ARS',
-        })),
-        // Nota: igual que antes de este cambio, el envío no se agrega como ítem separado
-        // acá — el total que se le cobra al comprador en Mercado Pago es solo la suma de
-        // productos (con descuento aplicado). El campo shipping_cost sí queda guardado en
-        // el pedido para referencia interna. Si el envío también debería cobrarse por MP,
-        // avisame y lo agrego como ítem aparte.
+        items: [
+          ...pricedItems.map((i) => ({
+            title: i.variant ? `${i.name} (${i.variant})` : i.name,
+            quantity: i.qty,
+            // Si hay descuento, se prorratea en el precio unitario (Mercado Pago no admite ítems con precio negativo).
+            unit_price: discountPct > 0 ? Math.round(i.price * (1 - discountPct) * 100) / 100 : i.price,
+            currency_id: 'ARS',
+          })),
+          // El envío se cobra como un ítem más, así Mercado Pago le cobra al
+          // comprador productos + envío juntos (coincide con el "total" del pedido).
+          { title: shippingInfo.shippingZone || 'Envío', quantity: 1, unit_price: shippingCost, currency_id: 'ARS' },
+        ],
         payer: { name: shippingInfo.nombre, email: shippingInfo.email },
         back_urls: {
           success: `${siteUrl}/checkout.html?status=success&order_id=${order.id}`,
