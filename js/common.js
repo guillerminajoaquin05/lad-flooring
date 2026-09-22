@@ -113,7 +113,7 @@ function ladFooterHTML() {
         </div>
       </div>
     </div>
-    <div class="footer-bottom">© 2026 Lad Flooring — Todos los derechos reservados</div>
+    <div class="footer-bottom">© 2026 Lad Flooring — Todos los derechos reservados · <a href="terminos.html" style="color:inherit;">Términos y Condiciones</a> · <a href="privacidad.html" style="color:inherit;">Política de Privacidad</a></div>
   </footer>`;
 }
 
