@@ -348,46 +348,21 @@
       return;
     }
 
-    // Transferencia bancaria: el pedido se crea directo, sin pasar por Mercado Pago
+    // Transferencia bancaria: el pedido lo crea create-order, que recalcula
+    // los montos del lado del servidor en vez de confiar en lo que mande el navegador.
     btn.textContent = 'Guardando pedido...';
-    const subtotal = await ladCartTotal();
-    const discount = subtotal * discountPct;
-    const total = subtotal - discount + shippingCost;
-    const session = await ladGetSession();
+    const { data, error } = await ladSupabase.functions.invoke('create-order', {
+      body: { items, shippingInfo, couponCode }
+    });
 
-    const { data: order, error: orderError } = await ladSupabase.from('orders').insert({
-      user_id: session.id,
-      nombre: shippingInfo.nombre,
-      apellido: shippingInfo.apellido,
-      email: shippingInfo.email,
-      telefono: shippingInfo.telefono,
-      direccion: shippingInfo.direccion,
-      depto: shippingInfo.depto || null,
-      localidad: shippingInfo.localidad,
-      provincia: shippingInfo.provincia,
-      codigo_postal: shippingInfo.codigoPostal,
-      notas: shippingInfo.notas || null,
-      shipping_zone: shippingInfo.shippingZone,
-      shipping_cost: shippingCost,
-      coupon_code: couponCode,
-      subtotal, discount, total,
-      payment_method: 'transferencia',
-      payment_status: 'pendiente',
-      order_status: 'preparando'
-    }).select().single();
-
-    if (orderError) {
+    if (error || !data || data.error) {
       btn.disabled = false;
       btn.textContent = 'Realizar pedido';
-      alert('No pudimos registrar tu pedido: ' + orderError.message);
+      alert('No pudimos registrar tu pedido: ' + (data && data.error ? data.error : (error ? error.message : 'Error desconocido')));
       return;
     }
 
-    const orderItems = items.map(i => ({ order_id: order.id, product_id: i.id, qty: i.qty, unit_price: i.price, variant: i.variant }));
-    await ladSupabase.from('order_items').insert(orderItems);
-    ladSupabase.functions.invoke('send-order-confirmation', { body: { orderId: order.id } }).catch(() => {});
-
-    document.getElementById('confirmOrderNumber').textContent = 'Pedido #' + order.id;
+    document.getElementById('confirmOrderNumber').textContent = 'Pedido #' + data.orderId;
     document.getElementById('confirmPayNote').textContent = 'Tu pedido quedó registrado y pendiente de aprobación. Apenas confirmemos la acreditación de tu transferencia, te avisamos por email y habilitamos el pedido.';
     localStorage.removeItem('lad_cart');
     ladUpdateCartBadge();
