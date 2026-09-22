@@ -106,10 +106,11 @@ function ladFooterHTML() {
         <div>
           <h4>Suscribite</h4>
           <p style="font-size:0.85rem;">Recibí novedades, promociones y tips de mantenimiento.</p>
-          <form class="newsletter-form" onsubmit="event.preventDefault(); this.reset(); alert('¡Gracias por suscribirte!');">
+          <form class="newsletter-form" onsubmit="ladSubscribeNewsletter(event, this); return false;">
             <input type="email" placeholder="Tu email" required>
             <button class="btn btn-primary btn-sm" type="submit">Enviar</button>
           </form>
+          <p class="newsletter-msg" style="font-size:0.8rem;margin-top:8px;min-height:1.2em;"></p>
         </div>
       </div>
     </div>
@@ -181,6 +182,43 @@ function ladImgClass(img) {
 }
 function ladImgBg(img) {
   return ladIsImageUrl(img) ? `background-image:url('${img.replace(/'/g, "%27")}');` : '';
+}
+
+/* Suscripción al newsletter del footer — no requiere cuenta, cualquiera puede
+   suscribirse con su email. Guarda en Supabase (tabla newsletter_subscribers,
+   con RLS que solo permite insertar, no leer). */
+async function ladSubscribeNewsletter(event, form) {
+  event.preventDefault();
+  const input = form.querySelector('input[type="email"]');
+  const msg = form.parentElement.querySelector('.newsletter-msg');
+  const btn = form.querySelector('button');
+  const email = input.value.trim();
+  if (!email) return;
+
+  if (!ladSupabase) {
+    if (msg) { msg.style.color = '#E7A9A9'; msg.textContent = 'No pudimos conectar. Probá de nuevo más tarde.'; }
+    return;
+  }
+
+  btn.disabled = true;
+  const { error } = await ladSupabase.from('newsletter_subscribers').insert({ email });
+  btn.disabled = false;
+
+  if (error) {
+    if (msg) {
+      if (error.code === '23505') {
+        msg.style.color = 'var(--powder-blue)';
+        msg.textContent = 'Ese email ya está suscripto. ¡Gracias!';
+      } else {
+        msg.style.color = '#E7A9A9';
+        msg.textContent = 'Hubo un error. Probá de nuevo en un rato.';
+      }
+    }
+    return;
+  }
+
+  form.reset();
+  if (msg) { msg.style.color = 'var(--gold)'; msg.textContent = '¡Gracias por suscribirte!'; }
 }
 
 document.addEventListener('DOMContentLoaded', ladRenderLayout);

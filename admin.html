@@ -45,6 +45,7 @@
       <button data-tab="productos">Productos</button>
       <button data-tab="servicios">Servicios</button>
       <button data-tab="faqs">FAQs</button>
+      <button data-tab="suscriptores">Suscriptores</button>
     </div>
 
     <div id="tabAdminPedidos">
@@ -129,6 +130,26 @@
             </tr>
           </thead>
           <tbody id="adminFaqsTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tabAdminSuscriptores" style="display:none;">
+      <div class="flex-between" style="margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+        <h3 class="mt-0">Suscriptores al newsletter</h3>
+        <button class="btn btn-outline" style="color:var(--navy);border-color:var(--navy);" id="btnExportSuscriptores">Exportar CSV</button>
+      </div>
+      <p style="font-size:0.85rem;color:#8199a3;margin-top:-8px;">Se suscriben desde el formulario del pie de página del sitio, sin necesidad de crear una cuenta.</p>
+      <div class="admin-table-wrap" style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Suscripto desde</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="adminSuscriptoresTbody"></tbody>
         </table>
       </div>
     </div>
@@ -613,6 +634,7 @@
       document.getElementById('tabAdminProductos').style.display = btn.dataset.tab === 'productos' ? 'block' : 'none';
       document.getElementById('tabAdminServicios').style.display = btn.dataset.tab === 'servicios' ? 'block' : 'none';
       document.getElementById('tabAdminFaqs').style.display = btn.dataset.tab === 'faqs' ? 'block' : 'none';
+      document.getElementById('tabAdminSuscriptores').style.display = btn.dataset.tab === 'suscriptores' ? 'block' : 'none';
     });
   });
 
@@ -934,6 +956,55 @@
     await loadAdminFaqs();
   });
 
+  // ---------- Suscriptores al newsletter ----------
+  let adminSuscriptores = [];
+
+  async function loadAdminSuscriptores() {
+    const { data, error } = await ladSupabase
+      .from('newsletter_subscribers')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) { alert('No pudimos cargar los suscriptores: ' + error.message); return; }
+    adminSuscriptores = data;
+    renderAdminSuscriptoresTable();
+  }
+
+  function renderAdminSuscriptoresTable() {
+    document.getElementById('adminSuscriptoresTbody').innerHTML = adminSuscriptores.length
+      ? adminSuscriptores.map(s => `
+        <tr>
+          <td>${s.email}</td>
+          <td>${new Date(s.created_at).toLocaleDateString('es-AR')}</td>
+          <td>
+            <div class="row-actions">
+              <button onclick="deleteSuscriptor('${s.id}')" style="color:#A94442;">Eliminar</button>
+            </div>
+          </td>
+        </tr>
+      `).join('')
+      : '<tr><td colspan="3" style="text-align:center;color:#8199a3;">Todavía no hay suscriptores.</td></tr>';
+  }
+
+  async function deleteSuscriptor(id) {
+    if (!confirm('¿Eliminar este suscriptor? Esta acción no se puede deshacer.')) return;
+    const { error } = await ladSupabase.from('newsletter_subscribers').delete().eq('id', id);
+    if (error) { alert('No pudimos eliminar el suscriptor: ' + error.message); return; }
+    await loadAdminSuscriptores();
+  }
+
+  document.getElementById('btnExportSuscriptores').addEventListener('click', () => {
+    if (adminSuscriptores.length === 0) { alert('Todavía no hay suscriptores para exportar.'); return; }
+    const rows = [['email', 'suscripto_desde'], ...adminSuscriptores.map(s => [s.email, s.created_at])];
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'suscriptores-lad-flooring.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
   (async function guardAdmin() {
     if (!(await ladIsLoggedIn())) {
       window.location.href = 'login.html?redirect=' + encodeURIComponent('admin.html');
@@ -949,6 +1020,7 @@
     loadAdminProducts();
     loadAdminServices();
     loadAdminFaqs();
+    loadAdminSuscriptores();
   })();
 </script>
 </body>
