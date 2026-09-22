@@ -4,7 +4,7 @@
    el resto del sitio sigue funcionando con los datos mock (products.js, services.js, etc). */
 
 const SUPABASE_URL = 'https://pdogvswdhqioarkpppua.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkb2d2c3dkaHFpb2Fya3BwcHVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MDA5MTksImV4cCI6MjEwNDM3NjkxOX0.i9OrAlzli63NdQiiO78NF0HToo7Slf41tAmqv0stnPs';
+const SUPABASE_ANON_KEY = 'sb_publishable_9Wk6q774NW5EG_ZGuqgXrg_gkM1Tu7B';
 
 const ladSupabase = (SUPABASE_URL.startsWith('TODO') || SUPABASE_ANON_KEY.startsWith('TODO'))
   ? null
