@@ -34,6 +34,22 @@
   .sort-menu button:last-child { border-bottom: none; }
   .sort-menu button:hover { background: var(--bg); }
   .sort-menu button.active { color: var(--gold); font-weight: bold; }
+  .shop-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: var(--space-4); }
+  .shop-toolbar .tag-filters { margin-bottom: 0; }
+  @media (max-width: 600px) {
+    .shop-section { padding-top: var(--space-3); }
+    .shop-toolbar { flex-wrap: nowrap; gap: 8px; margin-bottom: var(--space-3); }
+    .shop-toolbar .tag-filters { flex: 1; min-width: 0; gap: 6px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .shop-toolbar .tag-filters::-webkit-scrollbar { display: none; }
+    .shop-toolbar .tag-filters button { white-space: nowrap; padding: 8px 12px; }
+    #productGrid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    #productGrid .card-img { height: 150px; }
+    #productGrid .card-body { padding: 12px 12px 8px; }
+    #productGrid .card-body h3 { font-size: 0.95rem; line-height: 1.3; }
+    #productGrid .card-footer { flex-direction: column; align-items: stretch; padding: 0 12px 12px; gap: 8px; }
+    #productGrid .price { font-size: 1.05rem; }
+    #productGrid .card-footer .btn { width: 100%; justify-content: center; }
+  }
 </style>
 </head>
 <body data-page="tienda">
@@ -50,9 +66,9 @@
   </div>
 </section>
 
-<section class="section">
+<section class="section shop-section">
   <div class="container">
-    <div class="flex-between" style="margin-bottom:8px;flex-wrap:wrap;gap:12px;">
+    <div class="shop-toolbar">
       <div class="tag-filters" id="tagFilters">
         <button data-line="todos" class="active">Todos</button>
         <button data-line="bona">Línea Bona</button>
