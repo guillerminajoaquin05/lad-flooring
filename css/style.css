@@ -405,6 +405,10 @@ img { max-width: 100%; display: block; }
 .hero-arrow:hover { background: rgba(241,236,224,0.3); }
 .hero-arrow.prev { left: var(--space-3); }
 .hero-arrow.next { right: var(--space-3); }
+@media (max-width: 700px) {
+  .hero-arrow { top: auto; bottom: var(--space-2); transform: none; width: 36px; height: 36px; }
+  .hero-dots { right: 50%; transform: translateX(50%); bottom: calc(var(--space-2) + 13px); }
+}
 
 /* ---------- Grillas / Tarjetas ---------- */
 .grid { display: grid; gap: var(--space-3); }
@@ -703,11 +707,13 @@ img { max-width: 100%; display: block; }
 }
 .footer-bottom {
   border-top: 1px solid rgba(255,255,255,0.1);
-  padding: var(--space-2) 0;
+  padding: var(--space-2) 16px;
   font-size: 0.8rem;
   text-align: center;
   color: #7E97A0;
 }
+.footer-bottom a { display: inline; margin: 0; font-size: inherit; }
+.site-footer p { color: var(--powder-blue); }
 .newsletter-form { display: flex; gap: 8px; margin-top: var(--space-1); }
 .newsletter-form input {
   flex: 1;
