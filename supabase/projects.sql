@@ -25,6 +25,11 @@ $$;
 
 alter table public.projects enable row level security;
 
+-- Acceso de la API a la tabla (las políticas de abajo deciden qué filas ve/edita cada uno)
+grant select on public.projects to anon, authenticated;
+grant insert, update, delete on public.projects to authenticated;
+grant execute on function public.lad_is_admin() to anon, authenticated;
+
 drop policy if exists "projects: public read visible" on public.projects;
 create policy "projects: public read visible" on public.projects
   for select using (hidden = false or public.lad_is_admin());
