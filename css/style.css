@@ -267,6 +267,13 @@ img { max-width: 100%; display: block; }
 .ph.has-photo { background-size: contain; background-repeat: no-repeat; background-color: var(--white); }
 /* Fotos de servicios: a diferencia de productos, van con zoom (cover) y sin reborde blanco */
 .ph.service-photo.has-photo, .gallery-thumb.service-photo { background-size: cover; background-color: transparent; }
+/* Foto principal en la ficha de un servicio: se ve entera, con su proporción (las fotos son verticales) */
+.service-main-photo {
+  display: block; width: auto; height: auto;
+  max-width: 100%; max-height: min(78vh, 720px);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
 .ph-1 { background: repeating-linear-gradient(120deg, #26485A 0 26px, #1D3A47 26px 52px); }
 .ph-2 { background: repeating-linear-gradient(120deg, #8FB0BC 0 26px, #6E939F 26px 52px); }
 .ph-3 { background: repeating-linear-gradient(120deg, #CBA876 0 26px, #B98950 26px 52px); }

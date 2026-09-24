@@ -11,6 +11,12 @@
 <meta property="og:image" id="ogImage" content="https://ladflooring.com/assets/img/living-piso-natural.jpeg">
 <link rel="icon" href="assets/img/logo-mark.svg">
 <link rel="stylesheet" href="css/style.css">
+<style>
+  #serviceDetail > div { min-width: 0; }
+  @media (max-width: 600px) {
+    #serviceDetail .btn-lg { white-space: normal; text-align: center; width: 100%; justify-content: center; padding: 14px 20px; }
+  }
+</style>
 </head>
 <body data-page="servicios">
 
@@ -68,9 +74,11 @@
 
   document.getElementById('serviceDetail').innerHTML = `
     <div>
-      <div class="ph service-photo ${ladImgClass(service.img)}" id="mainImage" style="height:420px;border-radius:var(--radius-lg);${ladImgBg(service.img)}">
-        ${ladIsImageUrl(service.img) ? '' : `<span class="ph-tag">Foto: ${service.name.toLowerCase()}</span>`}
-      </div>
+      ${ladIsImageUrl(service.img)
+        ? `<img class="service-main-photo" id="mainImage" src="${service.img}" alt="${service.name}">`
+        : `<div class="ph service-photo ${ladImgClass(service.img)}" id="mainImage" style="height:420px;border-radius:var(--radius-lg);${ladImgBg(service.img)}">
+            <span class="ph-tag">Foto: ${service.name.toLowerCase()}</span>
+          </div>`}
       <div class="gallery-thumbs" id="galleryThumbs" style="display:none;"></div>
     </div>
     <div>
@@ -103,9 +111,7 @@
       thumb.addEventListener('click', () => {
         galleryMount.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
         thumb.classList.add('active');
-        const mainImg = document.getElementById('mainImage');
-        mainImg.className = 'ph service-photo has-photo';
-        mainImg.style.backgroundImage = `url('${thumb.dataset.url}')`;
+        document.getElementById('mainImage').src = thumb.dataset.url;
       });
     });
   }
