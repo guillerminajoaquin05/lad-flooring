@@ -44,6 +44,7 @@
       <button data-tab="pedidos" class="active">Pedidos</button>
       <button data-tab="productos">Productos</button>
       <button data-tab="servicios">Servicios</button>
+      <button data-tab="trabajos">Trabajos</button>
       <button data-tab="faqs">FAQs</button>
       <button data-tab="suscriptores">Suscriptores</button>
     </div>
@@ -110,6 +111,28 @@
             </tr>
           </thead>
           <tbody id="adminServicesTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tabAdminTrabajos" style="display:none;">
+      <div class="flex-between" style="margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+        <h3 class="mt-0">Trabajos Destacados <span style="font-size:0.8rem;color:#8199a3;">(página Quiénes Somos)</span></h3>
+        <button class="btn btn-primary" id="btnNuevoTrabajo">+ Agregar trabajo</button>
+      </div>
+      <div class="admin-table-wrap" style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Orden</th>
+              <th>Trabajo</th>
+              <th>Fotos</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="adminProjectsTbody"></tbody>
         </table>
       </div>
     </div>
@@ -327,6 +350,36 @@
       <div class="field"><label>Información adicional (opcional, un punto por línea)</label><textarea id="sUsageInfo" rows="4" placeholder="Un ítem por renglón, ej:&#10;Duración estimada: 2-3 días&#10;Apto para pisos de madera, cerámico y porcelanato"></textarea></div>
       <div class="checkbox-row" style="margin-bottom:20px;"><input type="checkbox" id="sHidden"> Ocultar servicio en el sitio</div>
       <button type="submit" class="btn btn-primary btn-block">Guardar servicio</button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: alta / edición de trabajo destacado -->
+<div class="modal-overlay" id="projectModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('projectModal')">✕</button>
+    <h3 id="projectModalTitle">Agregar trabajo</h3>
+    <form id="projectForm">
+      <input type="hidden" id="tId">
+      <div class="field"><label>Título</label><input type="text" id="tTitle" required placeholder="Ej: Departamento residencial"></div>
+      <div class="grid grid-2" style="gap:16px;">
+        <div class="field"><label>Etiqueta (madera / tipo)</label><input type="text" id="tWood" placeholder="Ej: Roble de Slavonia"></div>
+        <div class="field"><label>Orden</label><input type="number" id="tSortOrder" value="0"></div>
+      </div>
+      <div class="field">
+        <label>Fotos</label>
+        <div id="tImagesThumbs" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;"></div>
+        <input type="file" id="tImagesFile" accept="image/*" multiple>
+        <div id="tImagesMsg" style="font-size:0.78rem;color:#8199a3;margin-top:4px;"></div>
+        <p style="font-size:0.78rem;color:#8199a3;margin:6px 0 0;">La primera foto es la portada de la tarjeta. Usá ← para mover una foto hacia adelante.</p>
+      </div>
+      <div class="field"><label>Descripción corta (se ve en la tarjeta)</label><textarea id="tDescription" rows="3" required></textarea></div>
+      <div class="field">
+        <label>Texto largo (opcional, se ve al abrir la tarjeta)</label>
+        <textarea id="tDetails" rows="6" placeholder="Contá más sobre el trabajo: el estado inicial, qué se hizo, tiempos, resultado...&#10;&#10;Dejá una línea en blanco para empezar otro párrafo."></textarea>
+      </div>
+      <div class="checkbox-row" style="margin-bottom:20px;"><input type="checkbox" id="tHidden"> Ocultar trabajo en el sitio</div>
+      <button type="submit" class="btn btn-primary btn-block">Guardar trabajo</button>
     </form>
   </div>
 </div>
@@ -681,6 +734,7 @@
       document.getElementById('tabAdminPedidos').style.display = btn.dataset.tab === 'pedidos' ? 'block' : 'none';
       document.getElementById('tabAdminProductos').style.display = btn.dataset.tab === 'productos' ? 'block' : 'none';
       document.getElementById('tabAdminServicios').style.display = btn.dataset.tab === 'servicios' ? 'block' : 'none';
+      document.getElementById('tabAdminTrabajos').style.display = btn.dataset.tab === 'trabajos' ? 'block' : 'none';
       document.getElementById('tabAdminFaqs').style.display = btn.dataset.tab === 'faqs' ? 'block' : 'none';
       document.getElementById('tabAdminSuscriptores').style.display = btn.dataset.tab === 'suscriptores' ? 'block' : 'none';
     });
@@ -912,6 +966,152 @@
     submitBtn.disabled = false;
     closeModal('serviceModal');
     await loadAdminServices();
+  });
+
+  // ---------- Trabajos Destacados ----------
+  let adminProjects = [];
+  let projectImages = []; // fotos del trabajo abierto en el modal; la primera es la portada
+
+  async function loadAdminProjects() {
+    const { data, error } = await ladSupabase
+      .from('projects')
+      .select('*')
+      .order('sort_order')
+      .order('id');
+    if (error) {
+      document.getElementById('adminProjectsTbody').innerHTML = `<tr><td colspan="6" style="color:#A94442;">No pudimos cargar los trabajos: ${error.message}. ¿Ya corriste supabase/projects.sql en Supabase?</td></tr>`;
+      return;
+    }
+    adminProjects = data;
+    renderAdminProjectsTable();
+  }
+
+  function renderAdminProjectsTable() {
+    document.getElementById('adminProjectsTbody').innerHTML = adminProjects.map(p => `
+      <tr>
+        <td><div class="admin-thumb ph ${p.images[0] ? 'has-photo' : 'ph-3'}" style="${p.images[0] ? `background-image:url('${p.images[0].replace(/'/g, "%27")}');background-size:cover;background-position:center;` : ''}"></div></td>
+        <td>${p.sort_order}</td>
+        <td>${p.title}${p.wood ? `<div style="font-size:0.78rem;color:#8199a3;">${p.wood}</div>` : ''}${p.details ? '<div style="font-size:0.78rem;color:#8199a3;">con texto largo</div>' : ''}</td>
+        <td>${p.images.length}</td>
+        <td><span class="status-dot ${p.hidden ? 'hidden-status' : ''}">${p.hidden ? 'Oculto' : 'Visible'}</span></td>
+        <td>
+          <div class="row-actions">
+            <button onclick="editProject(${p.id})">Editar</button>
+            <button onclick="toggleProjectHidden(${p.id})">${p.hidden ? 'Mostrar' : 'Ocultar'}</button>
+            <button onclick="deleteProject(${p.id})" style="color:#A94442;">Eliminar</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function renderProjectImages() {
+    document.getElementById('tImagesThumbs').innerHTML = projectImages.map((url, i) => `
+      <div style="position:relative;width:72px;">
+        <div class="ph has-photo" style="width:72px;height:72px;border-radius:var(--radius-sm);border:${i === 0 ? '2px solid var(--gold)' : '1px solid var(--border)'};background-image:url('${url.replace(/'/g, "%27")}');background-size:cover;background-position:center;"></div>
+        <button type="button" title="Quitar" data-remove="${i}" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#A94442;color:#fff;border:none;cursor:pointer;font-size:0.7rem;line-height:1;padding:0;">✕</button>
+        <div style="font-size:0.7rem;text-align:center;margin-top:4px;color:#8199a3;">
+          ${i === 0 ? 'Portada' : `<button type="button" data-left="${i}" title="Mover hacia adelante" style="border:1px solid var(--border);background:var(--white);border-radius:10px;cursor:pointer;padding:0 8px;">←</button>`}
+        </div>
+      </div>
+    `).join('');
+    document.querySelectorAll('#tImagesThumbs [data-remove]').forEach(btn => btn.addEventListener('click', () => {
+      projectImages.splice(parseInt(btn.dataset.remove), 1);
+      renderProjectImages();
+    }));
+    document.querySelectorAll('#tImagesThumbs [data-left]').forEach(btn => btn.addEventListener('click', () => {
+      const i = parseInt(btn.dataset.left);
+      [projectImages[i - 1], projectImages[i]] = [projectImages[i], projectImages[i - 1]];
+      renderProjectImages();
+    }));
+  }
+
+  document.getElementById('tImagesFile').addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    e.target.value = '';
+    const msg = document.getElementById('tImagesMsg');
+    msg.style.color = '#5C7784';
+    msg.textContent = `Subiendo ${files.length} foto(s)...`;
+    try {
+      for (const file of files) {
+        projectImages.push(await ladUploadImage(file, 'projects'));
+        renderProjectImages();
+      }
+      msg.style.color = '#3d8a5c';
+      msg.textContent = '¡Fotos agregadas! Acordate de guardar el trabajo.';
+    } catch (err) {
+      msg.style.color = '#A94442';
+      msg.textContent = 'Error subiendo fotos: ' + err.message;
+    }
+  });
+
+  document.getElementById('btnNuevoTrabajo').addEventListener('click', () => {
+    document.getElementById('projectModalTitle').textContent = 'Agregar trabajo';
+    document.getElementById('projectForm').reset();
+    document.getElementById('tId').value = '';
+    document.getElementById('tSortOrder').value = adminProjects.length ? Math.max(...adminProjects.map(p => p.sort_order)) + 1 : 1;
+    document.getElementById('tImagesMsg').textContent = '';
+    projectImages = [];
+    renderProjectImages();
+    openModal('projectModal');
+  });
+
+  function editProject(id) {
+    const p = adminProjects.find(x => x.id === id);
+    document.getElementById('projectModalTitle').textContent = 'Editar trabajo';
+    document.getElementById('tId').value = p.id;
+    document.getElementById('tTitle').value = p.title;
+    document.getElementById('tWood').value = p.wood || '';
+    document.getElementById('tSortOrder').value = p.sort_order;
+    document.getElementById('tDescription').value = p.description;
+    document.getElementById('tDetails').value = p.details || '';
+    document.getElementById('tHidden').checked = p.hidden;
+    document.getElementById('tImagesMsg').textContent = '';
+    projectImages = p.images.slice();
+    renderProjectImages();
+    openModal('projectModal');
+  }
+
+  async function toggleProjectHidden(id) {
+    const p = adminProjects.find(x => x.id === id);
+    const { error } = await ladSupabase.from('projects').update({ hidden: !p.hidden }).eq('id', id);
+    if (error) { alert('No pudimos actualizar el trabajo: ' + error.message); return; }
+    await loadAdminProjects();
+  }
+
+  async function deleteProject(id) {
+    if (!confirm('¿Eliminar este trabajo? Esta acción no se puede deshacer.')) return;
+    const { error } = await ladSupabase.from('projects').delete().eq('id', id);
+    if (error) { alert('No pudimos eliminar el trabajo: ' + error.message); return; }
+    await loadAdminProjects();
+  }
+
+  document.getElementById('projectForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('tId').value;
+    const data = {
+      title: document.getElementById('tTitle').value.trim(),
+      wood: document.getElementById('tWood').value.trim(),
+      sort_order: parseInt(document.getElementById('tSortOrder').value) || 0,
+      description: document.getElementById('tDescription').value.trim(),
+      details: document.getElementById('tDetails').value.trim() || null,
+      images: projectImages,
+      hidden: document.getElementById('tHidden').checked
+    };
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    let error;
+    if (id) {
+      ({ error } = await ladSupabase.from('projects').update(data).eq('id', id));
+    } else {
+      ({ error } = await ladSupabase.from('projects').insert(data));
+    }
+    submitBtn.disabled = false;
+    if (error) { alert('No pudimos guardar el trabajo: ' + error.message); return; }
+    closeModal('projectModal');
+    await loadAdminProjects();
   });
 
   // ---------- FAQs ----------
@@ -1171,6 +1371,7 @@
     loadAdminOrders();
     loadAdminProducts();
     loadAdminServices();
+    loadAdminProjects();
     loadAdminFaqs();
     loadAdminSuscriptores();
     loadAdminNewsletterSends();
