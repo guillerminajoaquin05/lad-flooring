@@ -23,6 +23,16 @@ function ladMapProduct(row) {
   };
 }
 
+/* Los pisos tienen precios muy variables: no se venden por el carrito, se consultan por WhatsApp. */
+function ladIsConsultOnly(p) {
+  return p.line === 'flotantes';
+}
+
+function ladConsultButtonHTML(p, extraClass = 'btn-sm') {
+  const url = 'https://wa.me/5491126371921?text=' + encodeURIComponent(`Hola! Quiero consultar por el piso "${p.name}".`);
+  return `<a href="${url}" target="_blank" rel="noopener" class="btn btn-whatsapp ${extraClass}">Consultar</a>`;
+}
+
 /* La familia "Spray Mop" (mopa + repuestos/accesorios) va siempre primero en
    la tienda; el resto de las familias se ordena alfabéticamente detrás. */
 const LAD_FEATURED_FAMILY = 'spray mop';

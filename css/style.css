@@ -523,6 +523,7 @@ img { max-width: 100%; display: block; }
 
 .price { font-size: 1.2rem; color: var(--navy); font-weight: 700; font-family: Georgia, serif;}
 .price-old { text-decoration: line-through; color: #9AA9AE; font-size: 0.9rem; margin-right: 6px; }
+.price-consult { color: #5C7784; font-size: 0.9rem; font-style: italic; }
 
 .badge {
   display: inline-block;

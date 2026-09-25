@@ -51,13 +51,15 @@ Deno.serve(async (req) => {
     const productIds = [...new Set(items.map((i: any) => i.id))];
     const { data: dbProducts, error: productsError } = await supabase
       .from('products')
-      .select('id, name, price')
+      .select('id, name, price, line')
       .in('id', productIds);
     if (productsError) throw productsError;
 
     const productById = new Map(dbProducts.map((p: any) => [p.id, p]));
     for (const i of items) {
       if (!productById.has(i.id)) return json({ error: `Producto no encontrado: ${i.id}` }, 400);
+      // Los pisos se venden por consulta (precio variable), no por el carrito
+      if (productById.get(i.id)!.line === 'flotantes') return json({ error: `${productById.get(i.id)!.name} se vende por consulta` }, 400);
       if (!Number.isInteger(i.qty) || i.qty <= 0) return json({ error: 'Cantidad inválida' }, 400);
     }
 

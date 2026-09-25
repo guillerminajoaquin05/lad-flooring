@@ -83,10 +83,14 @@
     <div>
       ${product.usageTier ? `<span class="badge badge-outline">${LAD_TIER_LABELS[product.usageTier] || product.usageTier}</span>` : ''}
       <h1 style="margin-top:14px;">${product.name}</h1>
+      ${ladIsConsultOnly(product) ? `
+      <p class="price-consult" style="font-size:1.1rem;margin:14px 0;">Precio a consultar</p>
+      <p style="white-space:pre-line;">${product.description}</p>
+      <p style="font-size:0.9rem;color:#5C7784;">El precio depende de la superficie, la colocación y la disponibilidad. Escribinos y te pasamos un presupuesto.</p>
+      <div style="margin:24px 0;">${ladConsultButtonHTML(product, '')}</div>` : `
       <div style="margin:14px 0;">
         ${product.oldPrice ? `<span class="price-old">${ladFormatPrice(product.oldPrice)}</span>` : ''}
         <span class="price" style="font-size:1.6rem;">${ladFormatPrice(product.price)}</span>
-        ${product.line === 'flotantes' ? '<span style="color:#8199a3;font-size:0.9rem;"> / m²</span>' : ''}
       </div>
       <p style="white-space:pre-line;">${product.description}</p>
       ${variantsHTML}
@@ -102,7 +106,7 @@
         <button id="addToCartBtn" class="btn btn-primary" ${product.stock === 0 ? 'disabled' : ''}>Agregar al carrito</button>
       </div>
       <div class="divider"></div>
-      <p style="font-size:0.85rem;color:#8199a3;">Envíos a todo el país. Consultá el costo de envío en el carrito según tu código postal.</p>
+      <p style="font-size:0.85rem;color:#8199a3;">Envíos a todo el país. Consultá el costo de envío en el carrito según tu código postal.</p>`}
     </div>
   `;
 
@@ -142,20 +146,22 @@
     });
   }
 
-  document.getElementById('qtyMinus').addEventListener('click', () => {
-    const input = document.getElementById('qtyInput');
-    input.value = Math.max(1, parseInt(input.value) - 1);
-  });
-  document.getElementById('qtyPlus').addEventListener('click', () => {
-    const input = document.getElementById('qtyInput');
-    input.value = parseInt(input.value) + 1;
-  });
-  document.getElementById('addToCartBtn').addEventListener('click', function () {
-    const qty = parseInt(document.getElementById('qtyInput').value);
-    ladAddToCart(product.id, qty, selectedVariant);
-    this.textContent = 'Agregado ✓';
-    setTimeout(() => this.textContent = 'Agregar al carrito', 1500);
-  });
+  if (!ladIsConsultOnly(product)) {
+    document.getElementById('qtyMinus').addEventListener('click', () => {
+      const input = document.getElementById('qtyInput');
+      input.value = Math.max(1, parseInt(input.value) - 1);
+    });
+    document.getElementById('qtyPlus').addEventListener('click', () => {
+      const input = document.getElementById('qtyInput');
+      input.value = parseInt(input.value) + 1;
+    });
+    document.getElementById('addToCartBtn').addEventListener('click', function () {
+      const qty = parseInt(document.getElementById('qtyInput').value);
+      ladAddToCart(product.id, qty, selectedVariant);
+      this.textContent = 'Agregado ✓';
+      setTimeout(() => this.textContent = 'Agregar al carrito', 1500);
+    });
+  }
 
   const allProducts = await ladGetProducts();
   document.getElementById('relatedGrid').innerHTML = allProducts
@@ -168,8 +174,10 @@
           <h3><a href="producto.html?id=${p.id}">${p.name}</a></h3>
         </div>
         <div class="card-footer">
-          <span class="price">${ladFormatPrice(p.price)}</span>
-          <button class="btn btn-primary btn-sm" onclick="ladAddToCart('${p.id}')">Agregar</button>
+          ${ladIsConsultOnly(p)
+            ? `<span class="price-consult">Precio a consultar</span>${ladConsultButtonHTML(p)}`
+            : `<span class="price">${ladFormatPrice(p.price)}</span>
+          <button class="btn btn-primary btn-sm" onclick="ladAddToCart('${p.id}')">Agregar</button>`}
         </div>
       </div>
     `).join('');

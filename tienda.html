@@ -123,11 +123,14 @@
           <h3 style="margin-top:8px;"><a href="producto.html?id=${p.id}">${p.name}</a></h3>
         </div>
         <div class="card-footer">
+          ${ladIsConsultOnly(p) ? `
+          <span class="price-consult">Precio a consultar</span>
+          ${ladConsultButtonHTML(p)}` : `
           <span>
             ${p.oldPrice ? `<span class="price-old">${ladFormatPrice(p.oldPrice)}</span>` : ''}
             <span class="price">${ladFormatPrice(p.price)}</span>
           </span>
-          <button class="btn btn-primary btn-sm" onclick="ladAddToCart('${p.id}'); this.textContent='Agregado ✓'; setTimeout(()=>this.textContent='Agregar',1200);">Agregar</button>
+          <button class="btn btn-primary btn-sm" onclick="ladAddToCart('${p.id}'); this.textContent='Agregado ✓'; setTimeout(()=>this.textContent='Agregar',1200);">Agregar</button>`}
         </div>
       </div>
     `).join('');

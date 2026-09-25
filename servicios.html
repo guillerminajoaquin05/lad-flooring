@@ -31,9 +31,17 @@
   <div class="container">
     <div id="groupHeader" style="display:none;margin-bottom:var(--space-4);">
       <div class="breadcrumb"><a href="servicios.html" id="groupBack">← Volver a Servicios</a></div>
-      <h2 id="groupTitle" style="margin-top:8px;"></h2>
-      <p id="groupDesc" style="white-space:pre-line;"></p>
-      <div id="groupExtra"></div>
+      <div id="groupLayout">
+        <div id="groupMedia" style="display:none;">
+          <img class="service-main-photo" id="groupMainImage" alt="">
+          <div class="gallery-thumbs" id="groupThumbs" style="display:none;"></div>
+        </div>
+        <div style="min-width:0;">
+          <h2 id="groupTitle" style="margin-top:8px;"></h2>
+          <p id="groupDesc" style="white-space:pre-line;"></p>
+          <div id="groupExtra"></div>
+        </div>
+      </div>
     </div>
     <div class="tag-filters" id="categoryFilters">
       <button data-categoria="todos" class="active">Todos</button>
@@ -149,6 +157,29 @@
     }
 
     renderServices();
+
+    // Foto y galería del servicio padre, igual que en la ficha de un servicio (servicio.html)
+    if (padre && ladIsImageUrl(padre.img)) {
+      const photos = [padre.img, ...(await ladGetServiceImages(padre.id)).map(g => g.image_url)].filter(ladIsImageUrl);
+      const main = document.getElementById('groupMainImage');
+      main.src = photos[0];
+      main.alt = padre.name;
+      document.getElementById('groupLayout').className = 'grid grid-2';
+      document.getElementById('groupLayout').style.cssText = 'gap:48px;align-items:start;';
+      document.getElementById('groupMedia').style.display = 'block';
+      if (photos.length > 1) {
+        const thumbs = document.getElementById('groupThumbs');
+        thumbs.style.display = 'flex';
+        thumbs.innerHTML = photos.map((url, i) => `
+          <div class="gallery-thumb service-photo ${i === 0 ? 'active' : ''}" style="background-image:url('${url.replace(/'/g, "%27")}');" data-url="${url}"></div>
+        `).join('');
+        thumbs.querySelectorAll('.gallery-thumb').forEach(thumb => thumb.addEventListener('click', () => {
+          thumbs.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+          thumb.classList.add('active');
+          main.src = thumb.dataset.url;
+        }));
+      }
+    }
   })();
 </script>
 </body>

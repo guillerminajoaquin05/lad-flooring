@@ -160,8 +160,10 @@
             <h3 style="margin-top:8px;color:var(--navy);"><a href="producto.html?id=${p.id}">${p.name}</a></h3>
           </div>
           <div class="card-footer">
-            <span class="price">${ladFormatPrice(p.price)}</span>
-            <button class="btn btn-primary btn-sm" onclick="ladAddToCart('${p.id}')">Agregar</button>
+            ${ladIsConsultOnly(p)
+              ? `<span class="price-consult">Precio a consultar</span>${ladConsultButtonHTML(p)}`
+              : `<span class="price">${ladFormatPrice(p.price)}</span>
+            <button class="btn btn-primary btn-sm" onclick="ladAddToCart('${p.id}')">Agregar</button>`}
           </div>
         </div>`;
     });
