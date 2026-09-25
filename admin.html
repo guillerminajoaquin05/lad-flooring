@@ -42,6 +42,7 @@
 
     <div class="tag-filters" id="adminTabs" style="margin-bottom:24px;">
       <button data-tab="pedidos" class="active">Pedidos</button>
+      <button data-tab="cotizaciones">Cotizaciones <span id="quotesNewCount"></span></button>
       <button data-tab="productos">Productos</button>
       <button data-tab="servicios">Servicios</button>
       <button data-tab="trabajos">Trabajos</button>
@@ -67,6 +68,28 @@
             </tr>
           </thead>
           <tbody id="adminOrdersTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tabAdminCotizaciones" style="display:none;">
+      <div class="flex-between" style="margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+        <h3 class="mt-0">Pedidos de cotización <span style="font-size:0.8rem;color:#8199a3;">(formulario "Cotizá Tu Proyecto")</span></h3>
+      </div>
+      <div class="admin-table-wrap" style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Cliente</th>
+              <th>Ubicación</th>
+              <th>Superficie</th>
+              <th>Módulos</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="adminQuotesTbody"></tbody>
         </table>
       </div>
     </div>
@@ -351,6 +374,17 @@
       <div class="checkbox-row" style="margin-bottom:20px;"><input type="checkbox" id="sHidden"> Ocultar servicio en el sitio</div>
       <button type="submit" class="btn btn-primary btn-block">Guardar servicio</button>
     </form>
+  </div>
+</div>
+
+<!-- Modal: detalle de un pedido de cotización -->
+<div class="modal-overlay" id="quoteModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('quoteModal')">✕</button>
+    <h3 id="quoteModalTitle" style="margin-bottom:4px;"></h3>
+    <p id="quoteModalMeta" style="font-size:0.82rem;color:#8199a3;margin-top:0;"></p>
+    <div class="divider"></div>
+    <div id="quoteModalBody"></div>
   </div>
 </div>
 
@@ -743,6 +777,7 @@
       document.querySelectorAll('#adminTabs button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('tabAdminPedidos').style.display = btn.dataset.tab === 'pedidos' ? 'block' : 'none';
+      document.getElementById('tabAdminCotizaciones').style.display = btn.dataset.tab === 'cotizaciones' ? 'block' : 'none';
       document.getElementById('tabAdminProductos').style.display = btn.dataset.tab === 'productos' ? 'block' : 'none';
       document.getElementById('tabAdminServicios').style.display = btn.dataset.tab === 'servicios' ? 'block' : 'none';
       document.getElementById('tabAdminTrabajos').style.display = btn.dataset.tab === 'trabajos' ? 'block' : 'none';
@@ -978,6 +1013,97 @@
     closeModal('serviceModal');
     await loadAdminServices();
   });
+
+  // ---------- Cotizaciones ----------
+  const QUOTE_STATUS_LABELS = { nuevo: 'Nuevo', contactado: 'Contactado', cerrado: 'Cerrado' };
+  const QUOTE_ETAPA_LABELS = { 'obra-en-curso': 'Obra en curso', 'a-refaccionar': 'A refaccionar', 'desde-cero': 'Proyecto desde cero' };
+  let adminQuotes = [];
+
+  function ladEscape(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  async function loadAdminQuotes() {
+    const { data, error } = await ladSupabase
+      .from('cotizaciones')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) {
+      document.getElementById('adminQuotesTbody').innerHTML = `<tr><td colspan="7" style="color:#A94442;">No pudimos cargar las cotizaciones: ${ladEscape(error.message)}. ¿Ya corriste supabase/cotizaciones.sql en Supabase?</td></tr>`;
+      return;
+    }
+    adminQuotes = data;
+    renderAdminQuotesTable();
+  }
+
+  function renderAdminQuotesTable() {
+    const nuevos = adminQuotes.filter(q => q.status === 'nuevo').length;
+    document.getElementById('quotesNewCount').textContent = nuevos ? `(${nuevos})` : '';
+    document.getElementById('adminQuotesTbody').innerHTML = adminQuotes.length ? adminQuotes.map(q => `
+      <tr>
+        <td>${new Date(q.created_at).toLocaleDateString('es-AR')}</td>
+        <td><strong>${ladEscape(q.nombre)} ${ladEscape(q.apellido)}</strong><div style="font-size:0.78rem;color:#8199a3;">${ladEscape(q.telefono)}</div></td>
+        <td>${ladEscape(q.localidad)}, ${ladEscape(q.provincia)}</td>
+        <td>${ladEscape(q.superficie)} m²</td>
+        <td>${ladEscape(q.modulos.join(', '))}</td>
+        <td>
+          <select onchange="setQuoteStatus('${q.id}', this.value)" style="font-size:0.82rem;padding:4px 6px;border-radius:var(--radius-sm);border:1px solid var(--border);">
+            ${Object.entries(QUOTE_STATUS_LABELS).map(([v, l]) => `<option value="${v}" ${q.status === v ? 'selected' : ''}>${l}</option>`).join('')}
+          </select>
+        </td>
+        <td>
+          <div class="row-actions">
+            <button onclick="viewQuote('${q.id}')">Ver</button>
+            <button onclick="deleteQuote('${q.id}')" style="color:#A94442;">Eliminar</button>
+          </div>
+        </td>
+      </tr>
+    `).join('') : '<tr><td colspan="7" style="color:#8199a3;">Todavía no llegó ningún pedido de cotización.</td></tr>';
+  }
+
+  async function viewQuote(id) {
+    const q = adminQuotes.find(x => x.id === id);
+    document.getElementById('quoteModalTitle').textContent = `${q.nombre} ${q.apellido}`;
+    document.getElementById('quoteModalMeta').textContent = 'Recibido el ' + new Date(q.created_at).toLocaleString('es-AR');
+    const whatsapp = 'https://wa.me/' + q.telefono.replace(/\D/g, '').replace(/^0/, '').replace(/^(?!54)/, '549');
+    const row = (label, value) => `<div class="buyer-row"><span style="color:#8199a3;">${label}</span><span style="text-align:right;">${value}</span></div>`;
+    document.getElementById('quoteModalBody').innerHTML = `
+      ${row('Email', `<a href="mailto:${ladEscape(q.email)}" style="color:var(--gold);">${ladEscape(q.email)}</a>`)}
+      ${row('Teléfono', `${ladEscape(q.telefono)} · <a href="${whatsapp}" target="_blank" rel="noopener" style="color:var(--gold);">WhatsApp</a>`)}
+      ${row('Ubicación', `${ladEscape(q.localidad)}, ${ladEscape(q.provincia)}`)}
+      ${row('Superficie', `${ladEscape(q.superficie)} m²`)}
+      ${row('Etapa', ladEscape(QUOTE_ETAPA_LABELS[q.etapa] || q.etapa))}
+      ${row('Módulos', ladEscape(q.modulos.join(', ')))}
+      ${q.comentarios ? `<h4 style="margin-top:20px;">Comentarios</h4><p style="white-space:pre-line;">${ladEscape(q.comentarios)}</p>` : ''}
+      <div id="quoteFiles"></div>
+    `;
+    openModal('quoteModal');
+
+    if (q.files.length) {
+      const filesEl = document.getElementById('quoteFiles');
+      filesEl.innerHTML = '<h4 style="margin-top:20px;">Archivos</h4><p style="color:#8199a3;">Cargando...</p>';
+      const { data, error } = await ladSupabase.storage.from('quote-files').createSignedUrls(q.files, 60 * 60);
+      filesEl.innerHTML = '<h4 style="margin-top:20px;">Archivos</h4>' + (error
+        ? `<p style="color:#A94442;">No pudimos abrir los archivos: ${ladEscape(error.message)}</p>`
+        : data.map((f, i) => `<div><a href="${f.signedUrl}" target="_blank" rel="noopener" style="color:var(--gold);">📎 ${ladEscape(q.files[i].split('/').pop())}</a></div>`).join(''));
+    }
+  }
+
+  async function setQuoteStatus(id, status) {
+    const { error } = await ladSupabase.from('cotizaciones').update({ status }).eq('id', id);
+    if (error) { alert('No pudimos actualizar el estado: ' + error.message); return; }
+    adminQuotes.find(x => x.id === id).status = status;
+    renderAdminQuotesTable();
+  }
+
+  async function deleteQuote(id) {
+    if (!confirm('¿Eliminar este pedido de cotización y sus archivos? Esta acción no se puede deshacer.')) return;
+    const q = adminQuotes.find(x => x.id === id);
+    if (q.files.length) await ladSupabase.storage.from('quote-files').remove(q.files);
+    const { error } = await ladSupabase.from('cotizaciones').delete().eq('id', id);
+    if (error) { alert('No pudimos eliminar la cotización: ' + error.message); return; }
+    await loadAdminQuotes();
+  }
 
   // ---------- Trabajos Destacados ----------
   let adminProjects = [];
@@ -1382,6 +1508,7 @@
     loadAdminOrders();
     loadAdminProducts();
     loadAdminServices();
+    loadAdminQuotes();
     loadAdminProjects();
     loadAdminFaqs();
     loadAdminSuscriptores();

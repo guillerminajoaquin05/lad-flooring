@@ -123,7 +123,8 @@
           <div class="dropzone-files" id="dropzoneFiles"></div>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:8px;">Enviar proyecto para evaluación</button>
+        <p id="cotizacionError" style="display:none;color:#A94442;background:#FBEFEF;border-radius:var(--radius-sm);padding:12px 14px;font-size:0.9rem;"></p>
+        <button type="submit" id="cotizacionSubmit" class="btn btn-primary btn-block btn-lg" style="margin-top:8px;">Enviar proyecto para evaluación</button>
       </form>
 
       <div id="cotizacionSuccess" style="display:none;text-align:center;padding:20px 0;">
@@ -187,9 +188,17 @@
     selectedFiles.splice(i, 1);
     renderFiles();
   };
+  const MAX_FILE_MB = 10;
+  const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
   function addFiles(fileArray) {
-    selectedFiles = selectedFiles.concat(Array.from(fileArray));
+    const rejected = [];
+    Array.from(fileArray).forEach(f => {
+      if (!ALLOWED_TYPES.includes(f.type)) rejected.push(`${f.name} (solo PDF, JPG o PNG)`);
+      else if (f.size > MAX_FILE_MB * 1024 * 1024) rejected.push(`${f.name} (pesa más de ${MAX_FILE_MB} MB)`);
+      else selectedFiles.push(f);
+    });
     renderFiles();
+    if (rejected.length) alert('No pudimos agregar:\n' + rejected.join('\n'));
   }
   fileInput.addEventListener('change', () => addFiles(fileInput.files));
   ['dragenter', 'dragover'].forEach(evt => {
@@ -203,7 +212,7 @@
   });
 
   // Validación y envío
-  document.getElementById('formCotizacion').addEventListener('submit', function (e) {
+  document.getElementById('formCotizacion').addEventListener('submit', async function (e) {
     e.preventDefault();
     let valid = true;
 
@@ -230,8 +239,58 @@
 
     if (!valid) return;
 
-    this.style.display = 'none';
-    document.getElementById('cotizacionSuccess').style.display = 'block';
+    const errorBox = document.getElementById('cotizacionError');
+    const submitBtn = document.getElementById('cotizacionSubmit');
+    errorBox.style.display = 'none';
+    submitBtn.disabled = true;
+
+    try {
+      if (!ladSupabase) throw new Error('Supabase no conectado');
+      const quoteId = crypto.randomUUID();
+
+      const filePaths = [];
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const f = selectedFiles[i];
+        submitBtn.textContent = `Subiendo archivos (${i + 1} de ${selectedFiles.length})...`;
+        const safeName = f.name.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9._-]+/g, '-');
+        const path = `${quoteId}/${i + 1}-${safeName}`;
+        const { error } = await ladSupabase.storage.from('quote-files').upload(path, f, { contentType: f.type });
+        if (error) throw error;
+        filePaths.push(path);
+      }
+
+      submitBtn.textContent = 'Enviando...';
+      const val = id => document.getElementById(id).value.trim();
+      const { error } = await ladSupabase.from('cotizaciones').insert({
+        id: quoteId,
+        nombre: val('nombre'),
+        apellido: val('apellido'),
+        email: val('email'),
+        telefono: val('telefono'),
+        localidad: val('localidad'),
+        provincia: val('provincia'),
+        superficie: Number(val('superficie')),
+        etapa: val('etapa'),
+        modulos: [...selectedModulos],
+        comentarios: val('comentarios') || null,
+        files: filePaths
+      });
+      if (error) throw error;
+
+      // El aviso por email no bloquea: la cotización ya quedó guardada y se ve en el admin
+      ladSupabase.functions.invoke('notify-quote', { body: { quoteId } })
+        .then(({ error }) => { if (error) console.warn('[Lad Flooring] No se pudo mandar el aviso por email:', error.message); });
+
+      this.style.display = 'none';
+      document.getElementById('cotizacionSuccess').style.display = 'block';
+      document.getElementById('cotizacionCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      console.error('[Lad Flooring] Error enviando la cotización:', err);
+      errorBox.innerHTML = `No pudimos enviar tu proyecto. Probá de nuevo en unos minutos o escribinos por <a href="${LAD_WHATSAPP_URL}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">WhatsApp</a>.`;
+      errorBox.style.display = 'block';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Enviar proyecto para evaluación';
+    }
   });
 </script>
 </body>
