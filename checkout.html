@@ -66,30 +66,30 @@
             <div class="field" id="fProvinciaInfo">
               <label>Provincia</label>
               <select id="provinciaInfo">
-                <option value="caba">Ciudad Autónoma de Buenos Aires</option>
-                <option value="gba">Buenos Aires</option>
-                <option value="cercano">Córdoba</option>
-                <option value="cercano">Entre Ríos</option>
-                <option value="cercano">La Pampa</option>
-                <option value="cercano">Mendoza</option>
-                <option value="cercano">San Juan</option>
-                <option value="cercano">San Luis</option>
-                <option value="cercano">Santa Fe</option>
-                <option value="lejano">Catamarca</option>
-                <option value="lejano">Chaco</option>
-                <option value="lejano">Chubut</option>
-                <option value="lejano">Corrientes</option>
-                <option value="lejano">Formosa</option>
-                <option value="lejano">Jujuy</option>
-                <option value="lejano">La Rioja</option>
-                <option value="lejano">Misiones</option>
-                <option value="lejano">Neuquén</option>
-                <option value="lejano">Río Negro</option>
-                <option value="lejano">Salta</option>
-                <option value="lejano">Santa Cruz</option>
-                <option value="lejano">Santiago del Estero</option>
-                <option value="lejano">Tierra del Fuego</option>
-                <option value="lejano">Tucumán</option>
+                <option value="Ciudad Autónoma de Buenos Aires" data-zona="caba">Ciudad Autónoma de Buenos Aires</option>
+                <option value="Buenos Aires" data-zona="gba">Buenos Aires</option>
+                <option value="Córdoba" data-zona="cercano">Córdoba</option>
+                <option value="Entre Ríos" data-zona="cercano">Entre Ríos</option>
+                <option value="La Pampa" data-zona="cercano">La Pampa</option>
+                <option value="Mendoza" data-zona="cercano">Mendoza</option>
+                <option value="San Juan" data-zona="cercano">San Juan</option>
+                <option value="San Luis" data-zona="cercano">San Luis</option>
+                <option value="Santa Fe" data-zona="cercano">Santa Fe</option>
+                <option value="Catamarca" data-zona="lejano">Catamarca</option>
+                <option value="Chaco" data-zona="lejano">Chaco</option>
+                <option value="Chubut" data-zona="lejano">Chubut</option>
+                <option value="Corrientes" data-zona="lejano">Corrientes</option>
+                <option value="Formosa" data-zona="lejano">Formosa</option>
+                <option value="Jujuy" data-zona="lejano">Jujuy</option>
+                <option value="La Rioja" data-zona="lejano">La Rioja</option>
+                <option value="Misiones" data-zona="lejano">Misiones</option>
+                <option value="Neuquén" data-zona="lejano">Neuquén</option>
+                <option value="Río Negro" data-zona="lejano">Río Negro</option>
+                <option value="Salta" data-zona="lejano">Salta</option>
+                <option value="Santa Cruz" data-zona="lejano">Santa Cruz</option>
+                <option value="Santiago del Estero" data-zona="lejano">Santiago del Estero</option>
+                <option value="Tierra del Fuego" data-zona="lejano">Tierra del Fuego</option>
+                <option value="Tucumán" data-zona="lejano">Tucumán</option>
               </select>
             </div>
           </div>
@@ -180,6 +180,12 @@
     cercano: { label: 'Envío Interior (zona cercana)', price: 8900 },
     lejano: { label: 'Envío Interior (zona lejana)', price: 13500 }
   };
+  /* La lista de provincias guarda el nombre real; la zona de envío va en data-zona.
+     El servidor vuelve a calcular la zona a partir de la provincia. */
+  function selectedZone() {
+    const select = document.getElementById('provinciaInfo');
+    return shippingRates[select.options[select.selectedIndex].dataset.zona];
+  }
   let discountPct = 0;
   let currentStep = 2;
 
@@ -244,8 +250,7 @@
   async function updatePagoTotals() {
     const subtotal = await ladCartTotal();
     const discount = subtotal * discountPct;
-    const provincia = document.getElementById('provinciaInfo').value;
-    const zona = shippingRates[provincia];
+    const zona = selectedZone();
     const total = subtotal - discount + zona.price;
 
     document.getElementById('pagoSubtotal').textContent = ladFormatPrice(subtotal);
@@ -289,7 +294,6 @@
   });
 
   function getShippingInfo() {
-    const provincia = document.getElementById('provinciaInfo').value;
     return {
       nombre: document.getElementById('nombreInfo').value,
       apellido: document.getElementById('apellidoInfo').value,
@@ -298,10 +302,10 @@
       direccion: document.getElementById('direccionInfo').value,
       depto: document.getElementById('deptoInfo').value,
       localidad: document.getElementById('localidadInfo').value,
-      provincia: provincia,
+      provincia: document.getElementById('provinciaInfo').value,
       codigoPostal: document.getElementById('cpInfo').value,
       notas: document.getElementById('notasPedido').value,
-      shippingZone: shippingRates[provincia].label
+      shippingZone: selectedZone().label
     };
   }
 
@@ -313,8 +317,7 @@
       const p = cartProducts[idx];
       return { id: p.id, name: p.name, price: p.price, qty: item.qty, variant: item.variant || null };
     });
-    const provincia = document.getElementById('provinciaInfo').value;
-    const shippingCost = shippingRates[provincia].price;
+    const shippingCost = selectedZone().price;
     const shippingInfo = getShippingInfo();
     const couponCode = document.getElementById('discountCodePago').value || null;
 

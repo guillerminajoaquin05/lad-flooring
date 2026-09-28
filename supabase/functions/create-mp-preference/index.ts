@@ -21,10 +21,31 @@ const corsHeaders = {
 };
 
 /* Únicas fuentes de verdad para plata: si en algún momento cambian los
-   cupones válidos o las tarifas de envío, hay que actualizarlos acá (y en
-   create-order/index.ts, que tiene una copia igual). */
+   cupones válidos, las tarifas de envío o las provincias de cada zona, hay que
+   actualizarlos acá (y en create-order/index.ts, que tiene una copia igual). */
 const VALID_COUPONS: Record<string, number> = { LAD10: 0.10 };
-const SHIPPING_RATES: Record<string, number> = { caba: 4500, gba: 6800, cercano: 8900, lejano: 13500 };
+const SHIPPING_ZONES: Record<string, { label: string; price: number }> = {
+  caba: { label: 'Envío CABA', price: 4500 },
+  gba: { label: 'Envío GBA', price: 6800 },
+  cercano: { label: 'Envío Interior (zona cercana)', price: 8900 },
+  lejano: { label: 'Envío Interior (zona lejana)', price: 13500 },
+};
+const PROVINCE_ZONES: Record<string, string> = {
+  'Ciudad Autónoma de Buenos Aires': 'caba',
+  'Buenos Aires': 'gba',
+  'Córdoba': 'cercano', 'Entre Ríos': 'cercano', 'La Pampa': 'cercano', 'Mendoza': 'cercano',
+  'San Juan': 'cercano', 'San Luis': 'cercano', 'Santa Fe': 'cercano',
+  'Catamarca': 'lejano', 'Chaco': 'lejano', 'Chubut': 'lejano', 'Corrientes': 'lejano', 'Formosa': 'lejano',
+  'Jujuy': 'lejano', 'La Rioja': 'lejano', 'Misiones': 'lejano', 'Neuquén': 'lejano', 'Río Negro': 'lejano',
+  'Salta': 'lejano', 'Santa Cruz': 'lejano', 'Santiago del Estero': 'lejano', 'Tierra del Fuego': 'lejano',
+  'Tucumán': 'lejano',
+};
+
+// La zona sale de la provincia real. También acepta un código de zona, que es lo que mandaba el checkout anterior.
+function shippingZoneFor(provincia: string) {
+  const key = PROVINCE_ZONES[provincia] || (SHIPPING_ZONES[provincia] ? provincia : null);
+  return key ? SHIPPING_ZONES[key] : null;
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -61,13 +82,15 @@ Deno.serve(async (req) => {
     const productIds = [...new Set(items.map((i: any) => i.id))];
     const { data: dbProducts, error: productsError } = await supabase
       .from('products')
-      .select('id, name, price, stock')
+      .select('id, name, price, stock, line')
       .in('id', productIds);
     if (productsError) throw productsError;
 
     const productById = new Map(dbProducts.map((p: any) => [p.id, p]));
     for (const i of items) {
       if (!productById.has(i.id)) return json({ error: `Producto no encontrado: ${i.id}` }, 400);
+      // Los pisos se venden por consulta (precio variable), no por el carrito
+      if (productById.get(i.id)!.line === 'flotantes') return json({ error: `${productById.get(i.id)!.name} se vende por consulta` }, 400);
       if (!Number.isInteger(i.qty) || i.qty <= 0) return json({ error: 'Cantidad inválida' }, 400);
     }
 
@@ -82,8 +105,9 @@ Deno.serve(async (req) => {
     const discount = subtotal * discountPct;
 
     // 3. Recalculamos el envío a partir de la zona (ignoramos el shippingCost del navegador).
-    const shippingCost = SHIPPING_RATES[shippingInfo?.provincia] ?? null;
-    if (shippingCost === null) return json({ error: 'Zona de envío inválida' }, 400);
+    const zone = shippingZoneFor(shippingInfo?.provincia);
+    if (!zone) return json({ error: 'Provincia de envío inválida' }, 400);
+    const shippingCost = zone.price;
 
     const total = subtotal - discount + shippingCost;
 
@@ -102,7 +126,7 @@ Deno.serve(async (req) => {
         provincia: shippingInfo.provincia,
         codigo_postal: shippingInfo.codigoPostal,
         notas: shippingInfo.notas || null,
-        shipping_zone: shippingInfo.shippingZone,
+        shipping_zone: zone.label,
         shipping_cost: shippingCost,
         coupon_code: discountPct > 0 ? couponCode : null,
         subtotal,
@@ -146,7 +170,7 @@ Deno.serve(async (req) => {
           })),
           // El envío se cobra como un ítem más, así Mercado Pago le cobra al
           // comprador productos + envío juntos (coincide con el "total" del pedido).
-          { title: shippingInfo.shippingZone || 'Envío', quantity: 1, unit_price: shippingCost, currency_id: 'ARS' },
+          { title: zone.label, quantity: 1, unit_price: shippingCost, currency_id: 'ARS' },
         ],
         payer: { name: shippingInfo.nombre, email: shippingInfo.email },
         back_urls: {

@@ -836,7 +836,7 @@
           </td>
           <td>
             <div class="row-actions">
-              <button onclick="viewOrderItems('${o.id}')">Ver items</button>
+              <button onclick="viewOrderItems('${o.id}')">Ver pedido</button>
               ${needsApproval ? `<button onclick="approvePayment('${o.id}')" style="color:#3d8a5c;border-color:#3d8a5c;">Aprobar pago</button>` : ''}
               <button onclick="deleteOrder('${o.id}')" style="color:#A94442;">Eliminar</button>
             </div>
@@ -872,12 +872,28 @@
     const order = (window._adminOrdersCache || []).find(o => String(o.id) === String(orderId));
     if (!order) return;
     document.getElementById('buyersModalTitle').textContent = 'Pedido #' + order.id;
-    document.getElementById('buyersList').innerHTML = order.order_items.map(item => `
-      <div class="buyer-row">
-        <span>${item.products ? item.products.name : 'Producto'}${item.variant ? ` <span style="color:#8199a3;">(${item.variant})</span>` : ''}</span>
-        <span>x${item.qty} — ${ladFormatPrice(item.unit_price * item.qty)}</span>
-      </div>
-    `).join('');
+    const whatsapp = 'https://wa.me/' + String(order.telefono || '').replace(/\D/g, '').replace(/^0/, '').replace(/^(?!54)/, '549');
+    const row = (label, value) => `<div class="buyer-row"><span style="color:#8199a3;">${label}</span><span style="text-align:right;">${value}</span></div>`;
+    document.getElementById('buyersList').innerHTML = `
+      <p style="font-size:0.82rem;color:#8199a3;margin-top:0;">${new Date(order.created_at).toLocaleString('es-AR')} · ${order.payment_method === 'mp' ? 'Mercado Pago' : 'Transferencia'} (${PAY_STATUS_LABELS[order.payment_status] || order.payment_status})</p>
+      <h4 style="margin:16px 0 4px;">Entrega</h4>
+      ${row('Cliente', `${ladEscape(order.nombre)} ${ladEscape(order.apellido)}`)}
+      ${row('Teléfono', `${ladEscape(order.telefono)}${order.telefono ? ` · <a href="${whatsapp}" target="_blank" rel="noopener" style="color:var(--gold);">WhatsApp</a>` : ''}`)}
+      ${row('Email', `<a href="mailto:${ladEscape(order.email)}" style="color:var(--gold);">${ladEscape(order.email)}</a>`)}
+      ${row('Dirección', `${ladEscape(order.direccion)}${order.depto ? ', ' + ladEscape(order.depto) : ''}`)}
+      ${row('Localidad', `${ladEscape(order.localidad)}, ${ladEscape(order.provincia)}`)}
+      ${row('Código postal', ladEscape(order.codigo_postal))}
+      ${row('Envío', ladEscape(order.shipping_zone))}
+      ${order.notas ? `<p style="margin:10px 0 0;font-size:0.88rem;"><strong>Notas del cliente:</strong> <span style="white-space:pre-line;">${ladEscape(order.notas)}</span></p>` : ''}
+      <h4 style="margin:20px 0 4px;">Productos</h4>
+      ${order.order_items.map(item => row(
+        `${ladEscape(item.products ? item.products.name : 'Producto')}${item.variant ? ` (${ladEscape(item.variant)})` : ''} × ${item.qty}`,
+        ladFormatPrice(item.unit_price * item.qty)
+      )).join('')}
+      ${order.discount > 0 ? row(`Descuento${order.coupon_code ? ' (' + ladEscape(order.coupon_code) + ')' : ''}`, '-' + ladFormatPrice(order.discount)) : ''}
+      ${row('Envío', ladFormatPrice(order.shipping_cost))}
+      ${row('<strong style="color:var(--navy);">Total</strong>', `<strong>${ladFormatPrice(order.total)}</strong>`)}
+    `;
     openModal('buyersModal');
   }
 
