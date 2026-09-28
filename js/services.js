@@ -46,7 +46,7 @@ async function ladGetServiceById(id) {
 function ladRenderServiceGallery({ urls, mediaMount, thumbsMount, alt }) {
   const show = (url) => {
     mediaMount.innerHTML = ladIsVideoUrl(url)
-      ? `<video class="service-main-photo service-main-video" src="${url}" controls playsinline preload="metadata"></video>`
+      ? `<video class="service-main-photo service-main-video" src="${url}" controls muted playsinline preload="metadata"></video>`
       : `<img class="service-main-photo" src="${url}" alt="${(alt || '').replace(/"/g, '&quot;')}">`;
   };
   show(urls[0]);
