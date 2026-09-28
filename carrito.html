@@ -90,8 +90,8 @@
             <tr>
               <td class="t-label">Envío</td>
               <td class="t-value">
-                <label class="shipping-radio"><input type="radio" name="shipping" value="retiro" checked> Retiro por sucursal — Gratis</label>
-                <label class="shipping-radio"><input type="radio" name="shipping" value="zona"> <span id="zonaShippingLabel">Envío CABA</span> — <span id="zonaShippingPrice">$4.500</span></label>
+                <span id="zonaShippingLabel">Envío CABA</span> — <span id="zonaShippingPrice">$4.500</span>
+                <div style="font-size:0.78rem;color:#8199a3;font-weight:normal;">Según la provincia elegida</div>
               </td>
             </tr>
             <tr class="t-total">
@@ -133,8 +133,6 @@
   }
 
   function getShippingCost() {
-    const method = document.querySelector('input[name="shipping"]:checked').value;
-    if (method === 'retiro') return 0;
     return shippingRates[document.getElementById('provinciaSelect').value].price;
   }
 
@@ -194,7 +192,6 @@
   }
 
   document.getElementById('provinciaSelect').addEventListener('change', () => { updateZonaLabel(); updateSummary(); });
-  document.querySelectorAll('input[name="shipping"]').forEach(r => r.addEventListener('change', updateSummary));
   document.getElementById('btnActualizarTotales').addEventListener('click', () => { updateZonaLabel(); updateSummary(); });
 
   document.getElementById('finalizarPedidoBtn').addEventListener('click', async (e) => {
