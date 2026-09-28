@@ -42,18 +42,11 @@
         <p style="font-size:0.9rem;" id="shippingDetail">—</p>
       </div>
       <div class="info-card">
-        <h4>Contacto con el courier</h4>
-        <p style="font-size:0.9rem;">Si necesitás coordinar el horario de entrega o tenés dudas sobre el estado de tu paquete, podés contactar directamente a la empresa de logística.</p>
-        <a href="https://wa.me/5491126371921" target="_blank" rel="noopener" class="btn btn-whatsapp btn-sm" style="margin-top:8px;">Contactar courier</a>
+        <h4>¿Dudas sobre tu envío?</h4>
+        <p style="font-size:0.9rem;">Si necesitás coordinar el horario de entrega o tenés alguna consulta sobre tu pedido, escribinos y te respondemos.</p>
+        <a href="https://wa.me/5491126371921" id="envioWhatsapp" target="_blank" rel="noopener" class="btn btn-whatsapp btn-sm" style="margin-top:8px;">Escribinos por WhatsApp</a>
       </div>
     </div>
-
-    <div class="divider"></div>
-    <p style="font-size:0.82rem;color:#8199a3;">
-      Nota interna: esta sección usa tarifas fijas (Retiro en sucursal / CABA / GBA / Interior) como placeholder.
-      Cuando definamos si van a integrar cálculo automático por código postal con Andreani, Correo Argentino, Envío Pack o Ship Now,
-      reemplazamos esta pantalla por el widget de tracking de la API correspondiente.
-    </p>
   </div>
 </section>
 
@@ -109,6 +102,7 @@
     }
 
     document.getElementById('orderIdLabel').textContent = '#' + order.id;
+    document.getElementById('envioWhatsapp').href = 'https://wa.me/5491126371921?text=' + encodeURIComponent(`Hola! Tengo una consulta sobre mi pedido #${order.id}.`);
     document.getElementById('zonaLabel').textContent = ZONA_LABELS[order.shipping_zone] || order.shipping_zone;
 
     document.getElementById('shippingDetail').innerHTML = `
