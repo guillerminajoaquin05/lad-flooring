@@ -362,10 +362,11 @@
         <input type="hidden" id="sImg" value="ph-1">
       </div>
       <div class="field">
-        <label>Fotos adicionales (galería)</label>
+        <label>Fotos y videos adicionales (galería)</label>
         <div id="sGalleryThumbs" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;"></div>
-        <input type="file" id="sGalleryFile" accept="image/*" multiple>
+        <input type="file" id="sGalleryFile" accept="image/*,video/mp4,video/webm,video/quicktime" multiple>
         <div id="sGalleryMsg" style="font-size:0.78rem;color:#8199a3;margin-top:4px;"></div>
+        <p style="font-size:0.78rem;color:#8199a3;margin:6px 0 0;">Videos: MP4, WebM o MOV de hasta 50 MB. Si el video del celular pesa más, mandalo por WhatsApp a vos mismo y descargalo: WhatsApp lo comprime.</p>
       </div>
       <div class="field"><label>Descripción corta (para la grilla de Servicios)</label><textarea id="sShortDescription" rows="2" required></textarea></div>
       <div class="field"><label>Descripción completa (para la ficha del servicio)</label><textarea id="sDescription" rows="4" required></textarea></div>
@@ -507,6 +508,16 @@
     return idx === -1 ? null : imageUrl.slice(idx + marker.length);
   }
 
+  const LAD_MAX_VIDEO_MB = 50;
+
+  /* Miniatura de la galería en el admin: foto de fondo, o el primer cuadro del video con un ▶ encima. */
+  function ladGalleryThumbInner(url, isVideo) {
+    return isVideo
+      ? `<video src="${url}#t=0.5" muted preload="metadata" playsinline style="width:100%;height:100%;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--border);display:block;background:var(--navy-deep);"></video>
+         <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;text-shadow:0 1px 4px rgba(0,0,0,0.6);pointer-events:none;">▶</span>`
+      : `<div class="ph has-photo" style="width:100%;height:100%;border-radius:var(--radius-sm);border:1px solid var(--border);background-image:url('${url.replace(/'/g, "%27")}');"></div>`;
+  }
+
   function ladWireGalleryField({ table, idField, fileInputId, thumbsId, msgId, storagePrefix }) {
     let entityId = null;
     let pending = []; // { file, previewUrl } — fotos elegidas antes de que el producto/servicio exista
@@ -519,7 +530,7 @@
     function renderSaved(images) {
       document.getElementById(thumbsId).innerHTML = images.map(img => `
         <div style="position:relative;width:56px;height:56px;">
-          <div class="ph has-photo" style="width:100%;height:100%;border-radius:var(--radius-sm);border:1px solid var(--border);background-image:url('${img.image_url.replace(/'/g, "%27")}');"></div>
+          ${ladGalleryThumbInner(img.image_url, ladIsVideoUrl(img.image_url))}
           <button type="button" title="Eliminar" data-img-id="${img.id}" data-img-url="${img.image_url}" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#A94442;color:#fff;border:none;cursor:pointer;font-size:0.7rem;line-height:1;padding:0;">✕</button>
         </div>
       `).join('');
@@ -537,7 +548,7 @@
     function renderPending() {
       document.getElementById(thumbsId).innerHTML = pending.map((p, i) => `
         <div style="position:relative;width:56px;height:56px;">
-          <div class="ph has-photo" style="width:100%;height:100%;border-radius:var(--radius-sm);border:1px solid var(--border);background-image:url('${p.previewUrl}');"></div>
+          ${ladGalleryThumbInner(p.previewUrl, p.file.type.startsWith('video/'))}
           <button type="button" title="Quitar" data-pending-idx="${i}" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#A94442;color:#fff;border:none;cursor:pointer;font-size:0.7rem;line-height:1;padding:0;">✕</button>
         </div>
       `).join('');
@@ -551,10 +562,15 @@
       });
     }
     document.getElementById(fileInputId).addEventListener('change', async (e) => {
-      const files = Array.from(e.target.files);
-      if (!files.length) return;
-      e.target.value = '';
       const msg = document.getElementById(msgId);
+      const tooBig = Array.from(e.target.files).filter(f => f.type.startsWith('video/') && f.size > LAD_MAX_VIDEO_MB * 1024 * 1024);
+      const files = Array.from(e.target.files).filter(f => !tooBig.includes(f));
+      e.target.value = '';
+      if (tooBig.length) {
+        msg.style.color = '#A94442';
+        msg.textContent = `No se agregó: ${tooBig.map(f => `${f.name} (${Math.round(f.size / 1024 / 1024)} MB)`).join(', ')}. Los videos pueden pesar hasta ${LAD_MAX_VIDEO_MB} MB.`;
+      }
+      if (!files.length) return;
       if (entityId) {
         msg.style.color = '#5C7784';
         msg.textContent = `Subiendo ${files.length} foto(s)...`;

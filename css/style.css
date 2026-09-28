@@ -274,6 +274,14 @@ img { max-width: 100%; display: block; }
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
 }
+.service-main-video { background: var(--navy-deep); }
+.gallery-thumb-video { position: relative; overflow: hidden; background: var(--navy-deep); }
+.gallery-thumb-video video { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+.gallery-thumb-video::after {
+  content: '▶'; position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 1.1rem; text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
 .ph-1 { background: repeating-linear-gradient(120deg, #26485A 0 26px, #1D3A47 26px 52px); }
 .ph-2 { background: repeating-linear-gradient(120deg, #8FB0BC 0 26px, #6E939F 26px 52px); }
 .ph-3 { background: repeating-linear-gradient(120deg, #CBA876 0 26px, #B98950 26px 52px); }

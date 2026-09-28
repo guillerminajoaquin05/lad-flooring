@@ -74,11 +74,11 @@
 
   document.getElementById('serviceDetail').innerHTML = `
     <div>
-      ${ladIsImageUrl(service.img)
-        ? `<img class="service-main-photo" id="mainImage" src="${service.img}" alt="${service.name}">`
-        : `<div class="ph service-photo ${ladImgClass(service.img)}" id="mainImage" style="height:420px;border-radius:var(--radius-lg);${ladImgBg(service.img)}">
-            <span class="ph-tag">Foto: ${service.name.toLowerCase()}</span>
-          </div>`}
+      <div id="mainMedia">
+        <div class="ph service-photo ${ladImgClass(service.img)}" style="height:420px;border-radius:var(--radius-lg);">
+          <span class="ph-tag">Foto: ${service.name.toLowerCase()}</span>
+        </div>
+      </div>
       <div class="gallery-thumbs" id="galleryThumbs" style="display:none;"></div>
     </div>
     <div>
@@ -100,19 +100,13 @@
   }
 
   const galleryRows = await ladGetServiceImages(service.id);
-  const galleryPhotos = [{ image_url: service.img }, ...galleryRows].filter(g => ladIsImageUrl(g.image_url));
-  if (galleryPhotos.length > 1) {
-    const galleryMount = document.getElementById('galleryThumbs');
-    galleryMount.style.display = 'flex';
-    galleryMount.innerHTML = galleryPhotos.map((g, i) => `
-      <div class="gallery-thumb service-photo ${i === 0 ? 'active' : ''}" style="background-image:url('${g.image_url.replace(/'/g, "%27")}');" data-url="${g.image_url}"></div>
-    `).join('');
-    galleryMount.querySelectorAll('.gallery-thumb').forEach(thumb => {
-      thumb.addEventListener('click', () => {
-        galleryMount.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
-        thumb.classList.add('active');
-        document.getElementById('mainImage').src = thumb.dataset.url;
-      });
+  const galleryUrls = [service.img, ...galleryRows.map(g => g.image_url)].filter(ladIsImageUrl);
+  if (galleryUrls.length) {
+    ladRenderServiceGallery({
+      urls: galleryUrls,
+      mediaMount: document.getElementById('mainMedia'),
+      thumbsMount: document.getElementById('galleryThumbs'),
+      alt: service.name
     });
   }
 

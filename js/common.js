@@ -177,6 +177,9 @@ function ladRenderUsageList(text) {
 function ladIsImageUrl(img) {
   return !!img && !img.startsWith('ph-');
 }
+function ladIsVideoUrl(url) {
+  return !!url && /\.(mp4|webm|mov|m4v)$/i.test(url.split('?')[0]);
+}
 function ladImgClass(img) {
   return ladIsImageUrl(img) ? 'has-photo' : (img || 'ph-1');
 }
