@@ -29,6 +29,7 @@
     <div id="stepInfo">
       <div class="form-card" style="max-width:none;">
         <h2 style="margin-top:0;">Información de envío</h2>
+        <p style="font-size:0.88rem;color:#5C7784;margin-top:-6px;">Completá los datos de donde querés recibir el pedido.</p>
         <form id="formInfo" novalidate>
           <div class="grid grid-2" style="gap:16px;">
             <div class="field" id="fNombreInfo">
@@ -51,7 +52,7 @@
             </div>
           </div>
           <div class="field" id="fDireccionInfo">
-            <label>Dirección</label><input type="text" id="direccionInfo" placeholder="Calle y número" required>
+            <label>Dirección de entrega</label><input type="text" id="direccionInfo" placeholder="Calle y número" required>
             <span class="form-error">Ingresá tu dirección.</span>
           </div>
           <div class="field">
@@ -95,14 +96,6 @@
           <div class="field" id="fCpInfo" style="max-width:220px;">
             <label>Código Postal</label><input type="text" id="cpInfo" required>
             <span class="form-error">Ingresá tu código postal.</span>
-          </div>
-
-          <div class="checkbox-row" style="margin:20px 0;">
-            <input type="checkbox" id="otraDireccionCheck">
-            <label for="otraDireccionCheck" style="margin:0;">¿Enviar a otra dirección?</label>
-          </div>
-          <div id="otraDireccionBlock" style="display:none;">
-            <div class="field"><label>Dirección de envío</label><input type="text" id="direccionEnvio" placeholder="Calle y número"></div>
           </div>
 
           <div class="field">
@@ -202,10 +195,6 @@
     renderStepper();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-
-  document.getElementById('otraDireccionCheck').addEventListener('change', (e) => {
-    document.getElementById('otraDireccionBlock').style.display = e.target.checked ? 'block' : 'none';
-  });
 
   document.getElementById('formInfo').addEventListener('submit', async (e) => {
     e.preventDefault();
