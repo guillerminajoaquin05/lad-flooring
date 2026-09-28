@@ -65,6 +65,14 @@ Deno.serve(async (req) => {
         body: JSON.stringify({ orderId }),
       }).catch((e) => { console.error('Error invocando notify-new-order:', e); return null; });
       if (notifyRes && !notifyRes.ok) console.error('notify-new-order respondió', notifyRes.status, await notifyRes.text());
+
+      // Le avisamos al cliente que su pago fue aprobado (la función manda una sola vez por pedido)
+      const approvedRes = await fetch(`${SUPABASE_URL}/functions/v1/send-payment-approved`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      }).catch((e) => { console.error('Error invocando send-payment-approved:', e); return null; });
+      if (approvedRes && !approvedRes.ok) console.error('send-payment-approved respondió', approvedRes.status, await approvedRes.text());
     }
 
     return new Response('ok', { status: 200 });

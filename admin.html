@@ -859,6 +859,8 @@
     if (error) { alert('No pudimos aprobar el pago: ' + error.message); return; }
     const { error: stockError } = await ladSupabase.rpc('lad_apply_order_stock', { p_order_id: String(orderId) });
     if (stockError) alert('El pago quedó aprobado, pero no pudimos descontar el stock: ' + stockError.message + '\nRevisalo a mano en Productos.');
+    const { data: mail, error: mailError } = await ladSupabase.functions.invoke('send-payment-approved', { body: { orderId } });
+    if (mailError || (mail && mail.error)) alert('El pago quedó aprobado, pero no pudimos mandarle el email al cliente. Avisale por WhatsApp o email.');
     await loadAdminOrders();
   }
 
