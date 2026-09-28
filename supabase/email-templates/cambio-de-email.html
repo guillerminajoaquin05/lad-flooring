@@ -1,0 +1,11 @@
+<!-- Supabase → Authentication → Emails → Templates → "Change Email Address"
+     Asunto: Confirmá tu nuevo email en Lad Flooring -->
+<div style="font-family:Georgia,'Georgia Pro',serif;color:#1D3A47;max-width:560px;margin:0 auto;padding:24px;">
+  <h2 style="color:#1D3A47;margin-bottom:4px;">Confirmá tu nuevo email</h2>
+  <p style="color:#3C5763;">Pediste cambiar el email de tu cuenta en Lad Flooring de {{ .Email }} a {{ .NewEmail }}. Para confirmarlo, tocá el botón:</p>
+  <p style="margin:28px 0;">
+    <a href="{{ .ConfirmationURL }}" style="background:#B98950;color:#ffffff;text-decoration:none;padding:13px 26px;border-radius:30px;display:inline-block;">Confirmar nuevo email</a>
+  </p>
+  <p style="color:#8199a3;font-size:0.85rem;">Si no pediste este cambio, ignorá este email y escribinos a info@ladflooring.com.</p>
+  <p style="margin-top:28px;color:#8199a3;font-size:0.85rem;">Lad Flooring — Pisos de Madera</p>
+</div>

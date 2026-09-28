@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nueva contraseña — Lad Flooring</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="login">
+
+<div class="split-auth">
+  <div class="visual" style="background-image:url('assets/img/hero-piso-madera.jpg');">
+    <p class="quote">"Más de 20 años acompañando a familias y empresas a elegir su piso ideal."</p>
+  </div>
+  <div class="panel">
+    <div style="max-width:420px;width:100%;">
+      <a href="index.html"><img src="assets/img/logo-dark.svg" alt="Lad Flooring" style="height:70px;margin-bottom:18px;"></a>
+
+      <!-- Vista: verificando el link -->
+      <div id="viewCargando">
+        <h2>Nueva contraseña</h2>
+        <p>Verificando el link...</p>
+      </div>
+
+      <!-- Vista: formulario -->
+      <div id="viewForm" style="display:none;">
+        <h2>Elegí tu nueva contraseña</h2>
+        <p style="margin-bottom:24px;">Escribila dos veces para confirmarla.</p>
+        <form id="formNueva" novalidate>
+          <div class="field" id="fPass1">
+            <label for="pass1">Nueva contraseña</label>
+            <input type="password" id="pass1" placeholder="Mínimo 8 caracteres" minlength="8" autocomplete="new-password" required>
+            <span class="form-error">La contraseña debe tener al menos 8 caracteres.</span>
+          </div>
+          <div class="field" id="fPass2">
+            <label for="pass2">Repetir contraseña</label>
+            <input type="password" id="pass2" placeholder="Repetila" autocomplete="new-password" required>
+            <span class="form-error">Las contraseñas no coinciden.</span>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Guardar contraseña</button>
+        </form>
+      </div>
+
+      <!-- Vista: listo -->
+      <div id="viewListo" style="display:none;text-align:center;">
+        <div style="font-size:2.4rem;margin-bottom:12px;">✓</div>
+        <h2>¡Listo!</h2>
+        <p>Tu contraseña se cambió. Ya quedaste con la sesión iniciada.</p>
+        <a href="usuario.html" class="btn btn-primary" style="margin-top:16px;">Ir a mi cuenta</a>
+      </div>
+
+      <!-- Vista: link vencido -->
+      <div id="viewVencido" style="display:none;text-align:center;">
+        <h2>El link ya no sirve</h2>
+        <p>Puede que haya vencido o que ya lo hayas usado. Pedí uno nuevo desde "¿Olvidaste tu contraseña?".</p>
+        <a href="login.html" class="btn btn-primary" style="margin-top:16px;">Pedir un link nuevo</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/auth.js"></script>
+<script>
+function show(id) {
+  ['viewCargando', 'viewForm', 'viewListo', 'viewVencido'].forEach(v => {
+    document.getElementById(v).style.display = v === id ? 'block' : 'none';
+  });
+}
+
+/* El link del email trae un código de un solo uso; supabase-js lo canjea solo al cargar
+   la página y deja una sesión de recuperación. Si el link trae un error (vencido, ya usado)
+   o no se arma la sesión, mostramos cómo pedir otro. */
+(async function init() {
+  const hash = new URLSearchParams(window.location.hash.slice(1));
+  const query = new URLSearchParams(window.location.search);
+  if (!ladSupabase || hash.get('error') || query.get('error')) { show('viewVencido'); return; }
+
+  let recovering = false;
+  ladSupabase.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') { recovering = true; show('viewForm'); }
+  });
+
+  // Damos un momento para que se canjee el código del link
+  await new Promise(r => setTimeout(r, 1200));
+  if (recovering) return;
+  const { data } = await ladSupabase.auth.getSession();
+  show(data.session ? 'viewForm' : 'viewVencido');
+})();
+
+document.getElementById('formNueva').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const p1 = document.getElementById('pass1').value;
+  const p2 = document.getElementById('pass2').value;
+  document.getElementById('fPass1').classList.toggle('has-error', p1.length < 8);
+  document.getElementById('fPass2').classList.toggle('has-error', p1.length >= 8 && p1 !== p2);
+  if (p1.length < 8 || p1 !== p2) return;
+
+  const btn = this.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+  const { error } = await ladSupabase.auth.updateUser({ password: p1 });
+  btn.disabled = false;
+  btn.textContent = 'Guardar contraseña';
+
+  if (error) {
+    document.getElementById('fPass1').classList.add('has-error');
+    document.querySelector('#fPass1 .form-error').textContent = ladAuthErrorMessage(error);
+    return;
+  }
+  show('viewListo');
+});
+</script>
+</body>
+</html>

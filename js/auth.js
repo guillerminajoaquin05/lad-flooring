@@ -29,6 +29,13 @@ function ladAuthErrorMessage(error) {
   if (!error) return '';
   if (error.message === 'Invalid login credentials') return 'Email o contraseña incorrectos.';
   if (error.message === 'Email not confirmed') return 'Todavía no confirmaste tu email. Revisá tu casilla de correo.';
+  const msg = (error.message || '').toLowerCase();
+  if (msg.includes('already registered')) return 'Ya existe una cuenta con ese email. Iniciá sesión o recuperá tu contraseña.';
+  if (msg.includes('different from the old password')) return 'La contraseña nueva tiene que ser distinta de la anterior.';
+  if (msg.includes('password should be') || msg.includes('weak password')) return 'La contraseña es muy débil. Usá al menos 8 caracteres, mezclando letras y números.';
+  if (msg.includes('rate limit') || msg.includes('security purposes')) return 'Hiciste varios intentos seguidos. Esperá unos minutos y probá de nuevo.';
+  if (msg.includes('invalid email') || msg.includes('unable to validate email')) return 'Ese email no es válido.';
+  if (msg.includes('session') && msg.includes('missing')) return 'El link ya no sirve. Pedí uno nuevo desde "¿Olvidaste tu contraseña?".';
   return error.message;
 }
 

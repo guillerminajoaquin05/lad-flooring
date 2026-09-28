@@ -167,7 +167,8 @@ document.getElementById('formRecuperar').addEventListener('submit', async (e) =>
     return;
   }
   if (ladSupabase) {
-    await ladSupabase.auth.resetPasswordForEmail(email.value);
+    const siteBase = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+    await ladSupabase.auth.resetPasswordForEmail(email.value, { redirectTo: siteBase + 'nueva-contrasena.html' });
   }
   viewRecuperar.style.display = 'none';
   viewConfirm.style.display = 'block';
