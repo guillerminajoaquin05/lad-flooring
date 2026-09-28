@@ -64,6 +64,10 @@
   const ZONA_LABELS = { caba: 'Envío CABA', gba: 'Envío GBA', cercano: 'Envío Interior (zona cercana)', lejano: 'Envío Interior (zona lejana)' };
   const PAY_LABELS = { pendiente: 'Pendiente', aprobado: 'Aprobado', rechazado: 'Rechazado' };
 
+  function ladEscapeHTML(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
   function renderTracker(orderStatus) {
     const currentIdx = STATUS_STEPS.indexOf(orderStatus);
     document.getElementById('tracker').innerHTML = STATUS_STEPS.map((key, i) => {
@@ -109,6 +113,8 @@
       <strong>Método:</strong> ${ZONA_LABELS[order.shipping_zone] || order.shipping_zone}<br>
       <strong>Dirección:</strong> ${order.direccion}${order.depto ? ', ' + order.depto : ''}, ${order.localidad}, ${order.provincia}<br>
       <strong>Código postal:</strong> ${order.codigo_postal}<br>
+      ${order.shipping_carrier ? `<strong>Empresa de envío:</strong> ${ladEscapeHTML(order.shipping_carrier)}<br>` : ''}
+      ${order.tracking_number ? `<strong>Número de seguimiento:</strong> ${ladEscapeHTML(order.tracking_number)}<br>` : ''}
       <strong>Fecha del pedido:</strong> ${new Date(order.created_at).toLocaleDateString('es-AR')}<br>
       <strong>Estado del pago:</strong> ${PAY_LABELS[order.payment_status] || order.payment_status}
     `;

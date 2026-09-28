@@ -378,6 +378,31 @@
   </div>
 </div>
 
+<!-- Modal: marcar un pedido como despachado -->
+<div class="modal-overlay" id="shipModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="cancelShipModal()">✕</button>
+    <h3 id="shipModalTitle">Despachar pedido</h3>
+    <form id="shipForm">
+      <input type="hidden" id="shipOrderId">
+      <div class="field">
+        <label>Empresa de envío</label>
+        <input type="text" id="shipCarrier" list="shipCarrierList" placeholder="Ej: Andreani">
+        <datalist id="shipCarrierList">
+          <option value="Andreani"><option value="Correo Argentino"><option value="OCA">
+          <option value="Envíopack"><option value="Mensajería / moto"><option value="Entrega propia">
+        </datalist>
+      </div>
+      <div class="field">
+        <label>Número de seguimiento (opcional)</label>
+        <input type="text" id="shipTracking" placeholder="Ej: 360002345678">
+      </div>
+      <div class="checkbox-row" style="margin-bottom:20px;"><input type="checkbox" id="shipNotify" checked> Avisarle al cliente por email</div>
+      <button type="submit" class="btn btn-primary btn-block">Marcar como despachado</button>
+    </form>
+  </div>
+</div>
+
 <!-- Modal: detalle de un pedido de cotización -->
 <div class="modal-overlay" id="quoteModal">
   <div class="modal-box">
@@ -849,9 +874,54 @@
   }
 
   async function updateOrderStatus(orderId, newStatus) {
+    // Al despachar pedimos empresa y número de seguimiento, y avisamos al cliente
+    if (newStatus === 'despachado') { openShipModal(orderId); return; }
     const { error } = await ladSupabase.from('orders').update({ order_status: newStatus }).eq('id', orderId);
     if (error) { alert('No pudimos actualizar el estado: ' + error.message); await loadAdminOrders(); }
   }
+
+  function openShipModal(orderId) {
+    const order = (window._adminOrdersCache || []).find(o => String(o.id) === String(orderId));
+    document.getElementById('shipModalTitle').textContent = 'Despachar pedido #' + orderId;
+    document.getElementById('shipOrderId').value = orderId;
+    document.getElementById('shipCarrier').value = (order && order.shipping_carrier) || '';
+    document.getElementById('shipTracking').value = (order && order.tracking_number) || '';
+    document.getElementById('shipNotify').checked = !(order && order.shipped_email_sent_at);
+    openModal('shipModal');
+  }
+
+  // Si se cierra sin confirmar, el selector vuelve al estado que tenía
+  async function cancelShipModal() {
+    closeModal('shipModal');
+    await loadAdminOrders();
+  }
+  document.getElementById('shipModal').addEventListener('click', (e) => {
+    if (e.target.id === 'shipModal') loadAdminOrders();
+  });
+
+  document.getElementById('shipForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const orderId = document.getElementById('shipOrderId').value;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    const { error } = await ladSupabase.from('orders').update({
+      order_status: 'despachado',
+      shipping_carrier: document.getElementById('shipCarrier').value.trim() || null,
+      tracking_number: document.getElementById('shipTracking').value.trim() || null
+    }).eq('id', orderId);
+    if (error) {
+      submitBtn.disabled = false;
+      alert('No pudimos marcar el pedido como despachado: ' + error.message);
+      return;
+    }
+    if (document.getElementById('shipNotify').checked) {
+      const { data: mail, error: mailError } = await ladSupabase.functions.invoke('send-order-shipped', { body: { orderId } });
+      if (mailError || (mail && mail.error)) alert('El pedido quedó despachado, pero no pudimos mandarle el email al cliente. Avisale por WhatsApp o email.');
+    }
+    submitBtn.disabled = false;
+    closeModal('shipModal');
+    await loadAdminOrders();
+  });
 
   async function approvePayment(orderId) {
     if (!confirm('¿Confirmás que se recibió la transferencia y aprobás este pedido?')) return;
@@ -888,6 +958,8 @@
       ${row('Localidad', `${ladEscape(order.localidad)}, ${ladEscape(order.provincia)}`)}
       ${row('Código postal', ladEscape(order.codigo_postal))}
       ${row('Envío', ladEscape(order.shipping_zone))}
+      ${order.shipping_carrier ? row('Despachado por', ladEscape(order.shipping_carrier)) : ''}
+      ${order.tracking_number ? row('N° de seguimiento', ladEscape(order.tracking_number)) : ''}
       ${order.notas ? `<p style="margin:10px 0 0;font-size:0.88rem;"><strong>Notas del cliente:</strong> <span style="white-space:pre-line;">${ladEscape(order.notas)}</span></p>` : ''}
       <h4 style="margin:20px 0 4px;">Productos</h4>
       ${order.order_items.map(item => row(
