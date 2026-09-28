@@ -41,6 +41,12 @@ function shippingZoneFor(provincia: string) {
   return key ? SHIPPING_ZONES[key] : null;
 }
 
+// Deja terminar tareas de fondo (como mandar emails) después de responder
+function runInBackground(p: Promise<unknown>) {
+  const runtime = (globalThis as any).EdgeRuntime;
+  if (runtime?.waitUntil) runtime.waitUntil(p);
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -145,11 +151,14 @@ Deno.serve(async (req) => {
     const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
     if (itemsError) throw itemsError;
 
-    fetch(`${SUPABASE_URL}/functions/v1/send-order-confirmation`, {
+    // Email de confirmación al cliente y aviso a Lad Flooring (hay una transferencia para revisar).
+    // No bloquean la respuesta, pero waitUntil evita que se corten cuando la función termina.
+    const notify = (fn: string) => fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ orderId: order.id }),
-    }).catch((e) => console.error('Error invocando send-order-confirmation:', e));
+    }).catch((e) => console.error(`Error invocando ${fn}:`, e));
+    runInBackground(Promise.all([notify('send-order-confirmation'), notify('notify-new-order')]));
 
     return json({ ok: true, orderId: order.id });
   } catch (err) {

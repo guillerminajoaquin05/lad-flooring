@@ -57,6 +57,14 @@ Deno.serve(async (req) => {
     if (paymentStatus === 'aprobado') {
       const { error: stockError } = await supabase.rpc('lad_apply_order_stock', { p_order_id: String(orderId) });
       if (stockError) console.error('Error descontando stock del pedido', orderId, stockError);
+
+      // Avisamos a Lad Flooring que entró un pedido pagado (la función avisa una sola vez por pedido)
+      const notifyRes = await fetch(`${SUPABASE_URL}/functions/v1/notify-new-order`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      }).catch((e) => { console.error('Error invocando notify-new-order:', e); return null; });
+      if (notifyRes && !notifyRes.ok) console.error('notify-new-order respondió', notifyRes.status, await notifyRes.text());
     }
 
     return new Response('ok', { status: 200 });
