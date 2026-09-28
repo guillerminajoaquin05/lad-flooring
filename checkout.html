@@ -119,15 +119,8 @@
           <table class="order-summary-table" id="orderSummaryTable"></table>
         </div>
 
-        <div class="cart-coupon" style="margin-bottom:16px;">
-          <input type="text" id="discountCodePago" placeholder="Ingresar cupón">
-          <button type="button" class="btn btn-outline" style="color:var(--navy);border-color:var(--navy);" id="applyDiscountPago">Aplicar</button>
-        </div>
-        <span id="discountMsgPago" style="font-size:0.82rem;"></span>
-
         <div class="divider"></div>
         <div class="summary-row" style="display:flex;justify-content:space-between;padding:6px 0;"><span>Subtotal</span><span id="pagoSubtotal">$0</span></div>
-        <div class="summary-row" id="pagoDiscountRow" style="display:none;justify-content:space-between;padding:6px 0;color:#3d8a5c;"><span>Descuento</span><span id="pagoDiscount">-$0</span></div>
         <div class="summary-row" style="display:flex;justify-content:space-between;padding:6px 0;"><span id="pagoShippingLabel">Envío</span><span id="pagoShippingValue">$0</span></div>
         <div class="summary-row" style="display:flex;justify-content:space-between;padding:10px 0;font-weight:bold;font-size:1.15rem;color:var(--navy);border-top:1px solid var(--border);margin-top:6px;"><span>Total</span><span id="pagoTotal">$0</span></div>
 
@@ -186,7 +179,6 @@
     const select = document.getElementById('provinciaInfo');
     return shippingRates[select.options[select.selectedIndex].dataset.zona];
   }
-  let discountPct = 0;
   let currentStep = 2;
 
   function renderStepper() {
@@ -249,41 +241,14 @@
 
   async function updatePagoTotals() {
     const subtotal = await ladCartTotal();
-    const discount = subtotal * discountPct;
     const zona = selectedZone();
-    const total = subtotal - discount + zona.price;
+    const total = subtotal + zona.price;
 
     document.getElementById('pagoSubtotal').textContent = ladFormatPrice(subtotal);
     document.getElementById('pagoShippingLabel').textContent = zona.label;
     document.getElementById('pagoShippingValue').textContent = ladFormatPrice(zona.price);
     document.getElementById('pagoTotal').textContent = ladFormatPrice(total);
-
-    const discountRow = document.getElementById('pagoDiscountRow');
-    if (discountPct > 0) {
-      discountRow.style.display = 'flex';
-      document.getElementById('pagoDiscount').textContent = '-' + ladFormatPrice(discount);
-    } else {
-      discountRow.style.display = 'none';
-    }
   }
-
-  document.getElementById('applyDiscountPago').addEventListener('click', () => {
-    const code = document.getElementById('discountCodePago').value.trim().toUpperCase();
-    const msg = document.getElementById('discountMsgPago');
-    if (code === 'LAD10') {
-      discountPct = 0.10;
-      msg.style.color = '#3d8a5c';
-      msg.textContent = '¡Código aplicado! 10% de descuento.';
-    } else if (code === '') {
-      msg.textContent = '';
-      discountPct = 0;
-    } else {
-      discountPct = 0;
-      msg.style.color = '#A94442';
-      msg.textContent = 'Código inválido o vencido.';
-    }
-    updatePagoTotals();
-  });
 
   document.querySelectorAll('input[name="pay"]').forEach(radio => {
     radio.addEventListener('change', () => {
@@ -319,7 +284,6 @@
     });
     const shippingCost = selectedZone().price;
     const shippingInfo = getShippingInfo();
-    const couponCode = document.getElementById('discountCodePago').value || null;
 
     const btn = document.getElementById('btnRealizarPedido');
     btn.disabled = true;
@@ -328,7 +292,7 @@
       btn.textContent = 'Redirigiendo a Mercado Pago...';
       const siteUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
       const { data, error } = await ladSupabase.functions.invoke('create-mp-preference', {
-        body: { items, shippingInfo, shippingCost, discountPct, couponCode, siteUrl }
+        body: { items, shippingInfo, shippingCost, siteUrl }
       });
       if (error || !data || data.error) {
         btn.disabled = false;
@@ -344,7 +308,7 @@
     // los montos del lado del servidor en vez de confiar en lo que mande el navegador.
     btn.textContent = 'Guardando pedido...';
     const { data, error } = await ladSupabase.functions.invoke('create-order', {
-      body: { items, shippingInfo, couponCode }
+      body: { items, shippingInfo }
     });
 
     if (error || !data || data.error) {

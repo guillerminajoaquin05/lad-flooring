@@ -37,14 +37,9 @@
         </table>
       </div>
 
-      <div class="cart-actions-row">
-        <div class="cart-coupon">
-          <input type="text" id="discountCode" placeholder="Ingresar cupón promocional">
-          <button class="btn btn-outline" style="color:var(--navy);border-color:var(--navy);" id="applyDiscount">Aplicar</button>
-        </div>
+      <div class="cart-actions-row" style="justify-content:flex-end;">
         <a href="checkout.html" class="btn btn-navy" id="finalizarPedidoBtn">Finalizar pedido →</a>
       </div>
-      <span id="discountMsg" style="font-size:0.82rem;"></span>
 
       <div class="grid grid-2" style="gap:32px;align-items:start;margin-top:var(--space-4);">
         <div class="calc-envio">
@@ -92,10 +87,6 @@
               <td class="t-label">Subtotal</td>
               <td class="t-value" id="sumSubtotal">$0</td>
             </tr>
-            <tr id="sumDiscountRow" style="display:none;">
-              <td class="t-label">Descuento</td>
-              <td class="t-value" id="sumDiscount" style="color:#3d8a5c;">-$0</td>
-            </tr>
             <tr>
               <td class="t-label">Envío</td>
               <td class="t-value">
@@ -128,7 +119,6 @@
 <script src="js/auth.js"></script>
 <script src="js/common.js"></script>
 <script>
-  let discountPct = 0;
   const shippingRates = {
     caba: { label: 'Envío CABA', price: 4500 },
     gba: { label: 'Envío GBA', price: 6800 },
@@ -196,43 +186,16 @@
 
   async function updateSummary() {
     const subtotal = await ladCartTotal();
-    const discount = subtotal * discountPct;
     const shipping = getShippingCost();
-    const total = subtotal - discount + shipping;
+    const total = subtotal + shipping;
 
     document.getElementById('sumSubtotal').textContent = ladFormatPrice(subtotal);
     document.getElementById('sumTotal').textContent = ladFormatPrice(total);
-
-    const discountRow = document.getElementById('sumDiscountRow');
-    if (discountPct > 0) {
-      discountRow.style.display = 'table-row';
-      document.getElementById('sumDiscount').textContent = '-' + ladFormatPrice(discount);
-    } else {
-      discountRow.style.display = 'none';
-    }
   }
 
   document.getElementById('provinciaSelect').addEventListener('change', () => { updateZonaLabel(); updateSummary(); });
   document.querySelectorAll('input[name="shipping"]').forEach(r => r.addEventListener('change', updateSummary));
   document.getElementById('btnActualizarTotales').addEventListener('click', () => { updateZonaLabel(); updateSummary(); });
-
-  document.getElementById('applyDiscount').addEventListener('click', () => {
-    const code = document.getElementById('discountCode').value.trim().toUpperCase();
-    const msg = document.getElementById('discountMsg');
-    if (code === 'LAD10') {
-      discountPct = 0.10;
-      msg.style.color = '#3d8a5c';
-      msg.textContent = '¡Código aplicado! 10% de descuento.';
-    } else if (code === '') {
-      msg.textContent = '';
-      discountPct = 0;
-    } else {
-      discountPct = 0;
-      msg.style.color = '#A94442';
-      msg.textContent = 'Código inválido o vencido.';
-    }
-    updateSummary();
-  });
 
   document.getElementById('finalizarPedidoBtn').addEventListener('click', async (e) => {
     e.preventDefault();

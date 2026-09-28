@@ -53,6 +53,12 @@ Deno.serve(async (req) => {
       console.log('Filas actualizadas:', updated?.length ?? 0, JSON.stringify(updated));
     }
 
+    // Pago aprobado: descontamos el stock (la función ignora pedidos que ya lo descontaron)
+    if (paymentStatus === 'aprobado') {
+      const { error: stockError } = await supabase.rpc('lad_apply_order_stock', { p_order_id: String(orderId) });
+      if (stockError) console.error('Error descontando stock del pedido', orderId, stockError);
+    }
+
     return new Response('ok', { status: 200 });
   } catch (err) {
     console.error(err);

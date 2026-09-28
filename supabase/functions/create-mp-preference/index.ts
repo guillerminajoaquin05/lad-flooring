@@ -2,12 +2,11 @@
 // Crea el pedido en la base (pendiente) y una preferencia de pago en Mercado Pago.
 // Devuelve el link de pago (init_point) al que redirigimos al comprador.
 //
-// SEGURIDAD: el precio de cada producto, el descuento del cupón y el costo de
-// envío se RECALCULAN acá adentro a partir de datos de confianza (la tabla
-// products, el mapa de cupones y el mapa de tarifas de envío). Nunca se usa
-// el price/discountPct/shippingCost que manda el navegador para calcular el
-// total — eso evita que alguien arme el pedido a mano (por consola, sin pasar
-// por la tienda) y le pida a Mercado Pago que le cobre lo que quiera.
+// SEGURIDAD: el precio de cada producto y el costo de envío se RECALCULAN acá
+// adentro a partir de datos de confianza (la tabla products y el mapa de tarifas
+// de envío). Nunca se usa el price/shippingCost que manda el navegador para
+// calcular el total — eso evita que alguien arme el pedido a mano (por consola,
+// sin pasar por la tienda) y le pida a Mercado Pago que le cobre lo que quiera.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -20,10 +19,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-/* Únicas fuentes de verdad para plata: si en algún momento cambian los
-   cupones válidos, las tarifas de envío o las provincias de cada zona, hay que
-   actualizarlos acá (y en create-order/index.ts, que tiene una copia igual). */
-const VALID_COUPONS: Record<string, number> = { LAD10: 0.10 };
+/* Únicas fuentes de verdad para plata: si en algún momento cambian las tarifas
+   de envío o las provincias de cada zona, hay que actualizarlos acá (y en
+   create-order/index.ts, que tiene una copia igual). */
 const SHIPPING_ZONES: Record<string, { label: string; price: number }> = {
   caba: { label: 'Envío CABA', price: 4500 },
   gba: { label: 'Envío GBA', price: 6800 },
@@ -72,7 +70,7 @@ Deno.serve(async (req) => {
     const user = userData.user;
 
     const body = await req.json();
-    const { items, shippingInfo, couponCode, siteUrl: bodySiteUrl } = body;
+    const { items, shippingInfo, siteUrl: bodySiteUrl } = body;
 
     if (!items || items.length === 0) {
       return json({ error: 'El carrito está vacío' }, 400);
@@ -94,24 +92,30 @@ Deno.serve(async (req) => {
       if (!Number.isInteger(i.qty) || i.qty <= 0) return json({ error: 'Cantidad inválida' }, 400);
     }
 
+    // Stock suficiente (sumando las variantes del mismo producto). Se descuenta recién al aprobarse el pago (mp-webhook).
+    const qtyByProduct = new Map<string, number>();
+    for (const i of items) qtyByProduct.set(i.id, (qtyByProduct.get(i.id) || 0) + i.qty);
+    for (const [id, qty] of qtyByProduct) {
+      const p = productById.get(id)!;
+      if (qty > p.stock) {
+        return json({ error: p.stock > 0 ? `Solo quedan ${p.stock} unidades de ${p.name}` : `${p.name} está sin stock` }, 400);
+      }
+    }
+
     const pricedItems = items.map((i: any) => {
       const p = productById.get(i.id)!;
       return { id: p.id, name: p.name, price: p.price, qty: i.qty, variant: i.variant || null };
     });
     const subtotal = pricedItems.reduce((sum, i) => sum + i.price * i.qty, 0);
 
-    // 2. Recalculamos el descuento a partir del código de cupón (ignoramos el discountPct del navegador).
-    const discountPct = couponCode && VALID_COUPONS[String(couponCode).toUpperCase()] || 0;
-    const discount = subtotal * discountPct;
-
-    // 3. Recalculamos el envío a partir de la zona (ignoramos el shippingCost del navegador).
+    // 2. Recalculamos el envío a partir de la zona (ignoramos el shippingCost del navegador).
     const zone = shippingZoneFor(shippingInfo?.provincia);
     if (!zone) return json({ error: 'Provincia de envío inválida' }, 400);
     const shippingCost = zone.price;
 
-    const total = subtotal - discount + shippingCost;
+    const total = subtotal + shippingCost;
 
-    // 4. Creamos el pedido (pendiente de pago) con los montos ya verificados.
+    // 3. Creamos el pedido (pendiente de pago) con los montos ya verificados.
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -128,9 +132,9 @@ Deno.serve(async (req) => {
         notas: shippingInfo.notas || null,
         shipping_zone: zone.label,
         shipping_cost: shippingCost,
-        coupon_code: discountPct > 0 ? couponCode : null,
+        coupon_code: null,
         subtotal,
-        discount,
+        discount: 0,
         total,
         payment_method: 'mp',
         payment_status: 'pendiente',
@@ -151,7 +155,7 @@ Deno.serve(async (req) => {
     const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
     if (itemsError) throw itemsError;
 
-    // 5. Creamos la preferencia de pago en Mercado Pago con los mismos precios verificados.
+    // 4. Creamos la preferencia de pago en Mercado Pago con los mismos precios verificados.
     const siteUrl = (bodySiteUrl || req.headers.get('origin') || 'http://localhost:5500/').replace(/\/$/, '');
     const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
@@ -164,8 +168,7 @@ Deno.serve(async (req) => {
           ...pricedItems.map((i) => ({
             title: i.variant ? `${i.name} (${i.variant})` : i.name,
             quantity: i.qty,
-            // Si hay descuento, se prorratea en el precio unitario (Mercado Pago no admite ítems con precio negativo).
-            unit_price: discountPct > 0 ? Math.round(i.price * (1 - discountPct) * 100) / 100 : i.price,
+            unit_price: i.price,
             currency_id: 'ARS',
           })),
           // El envío se cobra como un ítem más, así Mercado Pago le cobra al

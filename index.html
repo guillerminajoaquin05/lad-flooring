@@ -163,7 +163,9 @@
             ${ladIsConsultOnly(p)
               ? `<span class="price-consult">Precio a consultar</span>${ladConsultButtonHTML(p)}`
               : `<span class="price">${ladFormatPrice(p.price)}</span>
-            <button class="btn btn-primary btn-sm" onclick="ladAddToCart('${p.id}')">Agregar</button>`}
+            ${p.stock > 0
+              ? `<button class="btn btn-primary btn-sm" onclick="ladAddToCart('${p.id}')">Agregar</button>`
+              : `<button class="btn btn-primary btn-sm" disabled>Sin stock</button>`}`}
           </div>
         </div>`;
     });

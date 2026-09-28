@@ -130,7 +130,9 @@
             ${p.oldPrice ? `<span class="price-old">${ladFormatPrice(p.oldPrice)}</span>` : ''}
             <span class="price">${ladFormatPrice(p.price)}</span>
           </span>
-          <button class="btn btn-primary btn-sm" onclick="ladAddToCart('${p.id}'); this.textContent='Agregado ✓'; setTimeout(()=>this.textContent='Agregar',1200);">Agregar</button>`}
+          ${p.stock > 0
+            ? `<button class="btn btn-primary btn-sm" onclick="ladAddToCart('${p.id}'); this.textContent='Agregado ✓'; setTimeout(()=>this.textContent='Agregar',1200);">Agregar</button>`
+            : `<button class="btn btn-primary btn-sm" disabled>Sin stock</button>`}`}
         </div>
       </div>
     `).join('');

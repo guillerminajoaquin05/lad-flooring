@@ -857,6 +857,8 @@
     if (!confirm('¿Confirmás que se recibió la transferencia y aprobás este pedido?')) return;
     const { error } = await ladSupabase.from('orders').update({ payment_status: 'aprobado' }).eq('id', orderId);
     if (error) { alert('No pudimos aprobar el pago: ' + error.message); return; }
+    const { error: stockError } = await ladSupabase.rpc('lad_apply_order_stock', { p_order_id: String(orderId) });
+    if (stockError) alert('El pago quedó aprobado, pero no pudimos descontar el stock: ' + stockError.message + '\nRevisalo a mano en Productos.');
     await loadAdminOrders();
   }
 

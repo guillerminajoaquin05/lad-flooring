@@ -16,9 +16,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-/* Misma fuente de verdad que create-mp-preference/index.ts — si cambian los
-   cupones, las tarifas de envío o las provincias de cada zona, actualizar en los dos lugares. */
-const VALID_COUPONS: Record<string, number> = { LAD10: 0.10 };
+/* Misma fuente de verdad que create-mp-preference/index.ts — si cambian las tarifas
+   de envío o las provincias de cada zona, actualizar en los dos lugares. */
 const SHIPPING_ZONES: Record<string, { label: string; price: number }> = {
   caba: { label: 'Envío CABA', price: 4500 },
   gba: { label: 'Envío GBA', price: 6800 },
@@ -65,14 +64,14 @@ Deno.serve(async (req) => {
     const user = userData.user;
 
     const body = await req.json();
-    const { items, shippingInfo, couponCode } = body;
+    const { items, shippingInfo } = body;
 
     if (!items || items.length === 0) return json({ error: 'El carrito está vacío' }, 400);
 
     const productIds = [...new Set(items.map((i: any) => i.id))];
     const { data: dbProducts, error: productsError } = await supabase
       .from('products')
-      .select('id, name, price, line')
+      .select('id, name, price, line, stock')
       .in('id', productIds);
     if (productsError) throw productsError;
 
@@ -84,20 +83,28 @@ Deno.serve(async (req) => {
       if (!Number.isInteger(i.qty) || i.qty <= 0) return json({ error: 'Cantidad inválida' }, 400);
     }
 
+    // Stock suficiente (sumando las variantes del mismo producto). Se descuenta recién al aprobarse el pago.
+    const qtyByProduct = new Map<string, number>();
+    for (const i of items) qtyByProduct.set(i.id, (qtyByProduct.get(i.id) || 0) + i.qty);
+    for (const [id, qty] of qtyByProduct) {
+      const p = productById.get(id)!;
+      if (qty > p.stock) {
+        return json({ error: p.stock > 0 ? `Solo quedan ${p.stock} unidades de ${p.name}` : `${p.name} está sin stock` }, 400);
+      }
+    }
+
     const pricedItems = items.map((i: any) => {
       const p = productById.get(i.id)!;
       return { id: p.id, price: p.price, qty: i.qty, variant: i.variant || null };
     });
     const subtotal = pricedItems.reduce((sum, i) => sum + i.price * i.qty, 0);
 
-    const discountPct = (couponCode && VALID_COUPONS[String(couponCode).toUpperCase()]) || 0;
-    const discount = subtotal * discountPct;
 
     const zone = shippingZoneFor(shippingInfo?.provincia);
     if (!zone) return json({ error: 'Provincia de envío inválida' }, 400);
     const shippingCost = zone.price;
 
-    const total = subtotal - discount + shippingCost;
+    const total = subtotal + shippingCost;
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -115,9 +122,9 @@ Deno.serve(async (req) => {
         notas: shippingInfo.notas || null,
         shipping_zone: zone.label,
         shipping_cost: shippingCost,
-        coupon_code: discountPct > 0 ? couponCode : null,
+        coupon_code: null,
         subtotal,
-        discount,
+        discount: 0,
         total,
         payment_method: 'transferencia',
         payment_status: 'pendiente',
