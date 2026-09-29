@@ -557,6 +557,9 @@ img { max-width: 100%; display: block; }
   margin: 0 auto;
   box-shadow: var(--shadow-card);
 }
+@media (max-width: 480px) {
+  .form-card { padding: 20px; }
+}
 .field { margin-bottom: var(--space-2); }
 .field label {
   display: block;

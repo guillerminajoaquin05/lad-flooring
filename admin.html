@@ -48,6 +48,7 @@
       <button data-tab="trabajos">Trabajos</button>
       <button data-tab="faqs">FAQs</button>
       <button data-tab="suscriptores">Suscriptores</button>
+      <button data-tab="configuracion">Configuración</button>
     </div>
 
     <div id="tabAdminPedidos">
@@ -178,6 +179,24 @@
           <tbody id="adminFaqsTbody"></tbody>
         </table>
       </div>
+    </div>
+
+    <div id="tabAdminConfiguracion" style="display:none;">
+      <h3 class="mt-0">Datos para transferencia bancaria</h3>
+      <p style="font-size:0.88rem;color:#5C7784;max-width:640px;">Se muestran al cliente cuando elige pagar por transferencia: en el checkout, en la pantalla de confirmación y en el email del pedido. Mientras el CBU/CVU o el alias estén vacíos, al cliente le decimos que le pasamos los datos por WhatsApp.</p>
+      <form id="bankForm" class="form-card" style="max-width:640px;margin:0;">
+        <div class="grid grid-2" style="gap:16px;">
+          <div class="field"><label>Titular de la cuenta</label><input type="text" id="bankTitular" placeholder="Ej: Lad Flooring S.R.L."></div>
+          <div class="field"><label>CUIT/CUIL</label><input type="text" id="bankCuit" placeholder="Ej: 30-12345678-9"></div>
+        </div>
+        <div class="field"><label>Banco o billetera</label><input type="text" id="bankBanco" placeholder="Ej: Banco Galicia / Mercado Pago"></div>
+        <div class="grid grid-2" style="gap:16px;">
+          <div class="field"><label>CBU / CVU</label><input type="text" id="bankCbu" inputmode="numeric" placeholder="22 dígitos"></div>
+          <div class="field"><label>Alias</label><input type="text" id="bankAlias" placeholder="Ej: lad.flooring.pisos"></div>
+        </div>
+        <div id="bankMsg" style="font-size:0.85rem;margin-bottom:12px;"></div>
+        <button type="submit" class="btn btn-primary">Guardar datos</button>
+      </form>
     </div>
 
     <div id="tabAdminSuscriptores" style="display:none;">
@@ -856,6 +875,7 @@
       document.getElementById('tabAdminTrabajos').style.display = btn.dataset.tab === 'trabajos' ? 'block' : 'none';
       document.getElementById('tabAdminFaqs').style.display = btn.dataset.tab === 'faqs' ? 'block' : 'none';
       document.getElementById('tabAdminSuscriptores').style.display = btn.dataset.tab === 'suscriptores' ? 'block' : 'none';
+      document.getElementById('tabAdminConfiguracion').style.display = btn.dataset.tab === 'configuracion' ? 'block' : 'none';
     });
   });
 
@@ -1152,6 +1172,42 @@
     submitBtn.disabled = false;
     closeModal('serviceModal');
     await loadAdminServices();
+  });
+
+  // ---------- Configuración: datos para transferencia ----------
+  const BANK_FIELDS = { titular: 'bankTitular', cuit: 'bankCuit', banco: 'bankBanco', cbu: 'bankCbu', alias: 'bankAlias' };
+
+  async function loadBankSettings() {
+    const { data, error } = await ladSupabase.from('site_settings').select('value').eq('key', 'transferencia').maybeSingle();
+    const msg = document.getElementById('bankMsg');
+    if (error) {
+      msg.style.color = '#A94442';
+      msg.textContent = 'No pudimos cargar los datos: ' + error.message + '. ¿Ya corriste supabase/site_settings.sql en Supabase?';
+      return;
+    }
+    const value = (data && data.value) || {};
+    Object.entries(BANK_FIELDS).forEach(([key, id]) => { document.getElementById(id).value = value[key] || ''; });
+  }
+
+  document.getElementById('bankForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('bankMsg');
+    const value = {};
+    Object.entries(BANK_FIELDS).forEach(([key, id]) => { value[key] = document.getElementById(id).value.trim(); });
+    value.cbu = value.cbu.replace(/\s|-/g, '');
+    if (value.cbu && !/^\d{22}$/.test(value.cbu)) {
+      msg.style.color = '#A94442';
+      msg.textContent = 'El CBU/CVU tiene que tener 22 números.';
+      return;
+    }
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    const { error } = await ladSupabase.from('site_settings')
+      .upsert({ key: 'transferencia', value, updated_at: new Date().toISOString() });
+    btn.disabled = false;
+    msg.style.color = error ? '#A94442' : '#3d8a5c';
+    msg.textContent = error ? 'No pudimos guardar: ' + error.message : '¡Datos guardados! Ya se muestran en el checkout.';
+    if (!error) document.getElementById('bankCbu').value = value.cbu;
   });
 
   // ---------- Cotizaciones ----------
@@ -1649,6 +1705,7 @@
     loadAdminProducts();
     loadAdminServices();
     loadAdminQuotes();
+    loadBankSettings();
     loadAdminProjects();
     loadAdminFaqs();
     loadAdminSuscriptores();

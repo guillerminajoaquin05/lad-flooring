@@ -14,6 +14,12 @@
   .order-summary-table .os-product .ph { width: 50px; height: 50px; border-radius: var(--radius-sm); flex-shrink: 0; }
   .radio-card { display:flex; align-items:center; gap:10px; border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; margin-bottom:10px; cursor:pointer; transition: box-shadow 0.2s ease; }
   .radio-card.selected { border-color:var(--gold); background:#FBF3E7; box-shadow: var(--shadow-card); }
+  .radio-card input { width: auto; margin: 0; flex-shrink: 0; }
+  .checkout-pay-actions { flex-wrap: wrap; gap: 12px; }
+  @media (max-width: 600px) {
+    .checkout-pay-actions { flex-direction: column-reverse; align-items: stretch; }
+    .checkout-pay-actions .btn { width: 100%; justify-content: center; }
+  }
   .pay-note { background:#FBF3E7; border:1px solid var(--gold); border-radius:var(--radius); padding:12px 14px; font-size:0.85rem; margin-top:10px; display:none; }
 </style>
 </head>
@@ -130,11 +136,12 @@
           <label class="radio-card" data-pay="transferencia"><input type="radio" name="pay" value="transferencia"> Transferencia bancaria</label>
           <div class="pay-note" id="transferNote">
             Al elegir transferencia, tu compra queda <strong>pendiente de aprobación</strong> hasta que el equipo de Lad Flooring confirme la acreditación del pago y habilite manualmente el producto. Te vamos a avisar por email apenas esté confirmado.
+            <div id="bankDetailsNote"></div>
           </div>
         </div>
 
         <p style="font-size:0.8rem;color:#8199a3;margin-top:20px;">Al realizar el pedido, aceptás nuestros <a href="terminos.html" target="_blank" rel="noopener" style="color:var(--gold);">Términos y Condiciones</a> y nuestra <a href="privacidad.html" target="_blank" rel="noopener" style="color:var(--gold);">Política de Privacidad</a>.</p>
-        <div class="flex-between" style="margin-top:12px;">
+        <div class="flex-between checkout-pay-actions" style="margin-top:12px;">
           <button type="button" class="btn btn-outline" style="color:var(--navy);border-color:var(--navy);" id="btnVolverInfo">← Anterior</button>
           <button type="button" class="btn btn-primary btn-lg" id="btnRealizarPedido">Realizar pedido</button>
         </div>
@@ -148,6 +155,7 @@
         <h2>¡Gracias por tu compra!</h2>
         <p id="confirmOrderNumber" style="color:var(--navy);font-weight:600;"></p>
         <p id="confirmPayNote" style="max-width:480px;margin:0 auto 20px;"></p>
+        <div id="confirmBankDetails" style="max-width:480px;margin:0 auto 24px;text-align:left;"></div>
         <div class="flex" style="justify-content:center;gap:16px;flex-wrap:wrap;">
           <a href="usuario.html" class="btn btn-primary">Ver mis compras</a>
           <a href="index.html" class="btn btn-outline" style="color:var(--navy);border-color:var(--navy);">Volver al inicio</a>
@@ -180,6 +188,42 @@
     return shippingRates[select.options[select.selectedIndex].dataset.zona];
   }
   let currentStep = 2;
+
+  /* Datos para transferencia: se cargan desde el admin (Configuración) y se guardan en site_settings */
+  let bankDetails = null;
+  async function loadBankDetails() {
+    if (!ladSupabase) return;
+    const { data } = await ladSupabase.from('site_settings').select('value').eq('key', 'transferencia').maybeSingle();
+    const v = (data && data.value) || {};
+    bankDetails = (v.cbu || v.alias) ? v : null;
+    document.getElementById('bankDetailsNote').innerHTML = bankDetailsHTML();
+  }
+  function escHTML(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function bankDetailsHTML(total) {
+    if (!bankDetails) {
+      return `<p style="margin:10px 0 0;">Al confirmar el pedido te pasamos los datos para transferir por WhatsApp.</p>`;
+    }
+    const row = (label, value, copy) => value ? `
+      <div style="padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.06);">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+          <span style="color:#8199a3;font-size:0.78rem;">${label}</span>
+          ${copy ? `<button type="button" style="background:none;border:none;padding:0;color:var(--gold);font-family:inherit;font-size:0.82rem;text-decoration:underline;cursor:pointer;" onclick="navigator.clipboard.writeText('${escHTML(value)}').then(() => { this.textContent = 'Copiado ✓'; setTimeout(() => this.textContent = 'Copiar', 1500); })">Copiar</button>` : ''}
+        </div>
+        <strong style="display:block;overflow-wrap:anywhere;font-size:${copy ? '0.95rem' : '1rem'};">${escHTML(value)}</strong>
+      </div>` : '';
+    return `
+      <div style="margin-top:12px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;">
+        <div style="font-weight:bold;color:var(--navy);margin-bottom:4px;">Datos para transferir</div>
+        ${total ? row('Monto', total, false) : ''}
+        ${row('CBU/CVU', bankDetails.cbu, true)}
+        ${row('Alias', bankDetails.alias, true)}
+        ${row('Titular', bankDetails.titular, false)}
+        ${row('CUIT', bankDetails.cuit, false)}
+        ${row('Banco', bankDetails.banco, false)}
+      </div>`;
+  }
 
   function renderStepper() {
     document.getElementById('stepperMount').innerHTML = ladCheckoutStepperHTML(currentStep);
@@ -319,7 +363,17 @@
     }
 
     document.getElementById('confirmOrderNumber').textContent = 'Pedido #' + data.orderId;
-    document.getElementById('confirmPayNote').textContent = 'Tu pedido quedó registrado y pendiente de aprobación. Apenas confirmemos la acreditación de tu transferencia, te avisamos por email y habilitamos el pedido.';
+    const total = document.getElementById('pagoTotal').textContent;
+    document.getElementById('confirmPayNote').textContent = bankDetails
+      ? `Tu pedido quedó registrado. Transferí ${total} con los datos de abajo y mandanos el comprobante. Apenas confirmemos la acreditación, te avisamos por email y preparamos el pedido.`
+      : 'Tu pedido quedó registrado y pendiente de aprobación. Escribinos por WhatsApp y te pasamos los datos para transferir; apenas confirmemos la acreditación, te avisamos por email.';
+    const waText = bankDetails
+      ? `Hola! Te mando el comprobante de la transferencia del pedido #${data.orderId} por ${total}.`
+      : `Hola! Hice el pedido #${data.orderId} por ${total} y quiero pagarlo por transferencia. ¿Me pasan los datos?`;
+    document.getElementById('confirmBankDetails').innerHTML = (bankDetails ? bankDetailsHTML(total) : '') + `
+      <a href="https://wa.me/5491126371921?text=${encodeURIComponent(waText)}" target="_blank" rel="noopener" class="btn btn-whatsapp btn-block" style="margin-top:14px;">
+        ${bankDetails ? 'Mandar el comprobante por WhatsApp' : 'Pedir los datos por WhatsApp'}
+      </a>`;
     localStorage.removeItem('lad_cart');
     ladUpdateCartBadge();
     goToStep(4);
@@ -365,6 +419,7 @@
     if (session && session.nombre) document.getElementById('nombreInfo').value = session.nombre;
     if (session && session.apellido) document.getElementById('apellidoInfo').value = session.apellido;
     if (session && session.telefono) document.getElementById('telefonoInfo').value = session.telefono;
+    loadBankDetails();
   })();
 </script>
 </body>

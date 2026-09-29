@@ -54,6 +54,23 @@ Deno.serve(async (req) => {
         <td style="padding:8px 0;border-bottom:1px solid #E3DCCE;text-align:right;">${formatPrice(i.unit_price * i.qty)}</td>
       </tr>`).join('');
 
+    // Datos para transferir (se cargan desde el admin → Configuración)
+    let bankHtml = '';
+    if (order.payment_method === 'transferencia') {
+      const { data: setting } = await supabase.from('site_settings').select('value').eq('key', 'transferencia').maybeSingle();
+      const bank = (setting && setting.value) || {};
+      const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+      const line = (label: string, value: string) => value ? `<div><span style="color:#8199a3;">${label}:</span> <strong>${esc(value)}</strong></div>` : '';
+      bankHtml = (bank.cbu || bank.alias)
+        ? `<div style="background:#F6F1E7;border-radius:10px;padding:14px 18px;margin:18px 0;line-height:1.7;">
+             <div style="font-weight:bold;margin-bottom:4px;">Datos para transferir</div>
+             ${line('Monto', formatPrice(order.total))}${line('CBU/CVU', bank.cbu)}${line('Alias', bank.alias)}
+             ${line('Titular', bank.titular)}${line('CUIT', bank.cuit)}${line('Banco', bank.banco)}
+             <div style="margin-top:6px;font-size:0.9rem;color:#3C5763;">Cuando transfieras, respondé este email o mandanos el comprobante por WhatsApp al +54 9 11 2637-1921.</div>
+           </div>`
+        : `<p style="color:#3C5763;">Escribinos por WhatsApp al +54 9 11 2637-1921 y te pasamos los datos para transferir.</p>`;
+    }
+
     const paymentNote = order.payment_method === 'transferencia'
       ? 'Tu pago por transferencia quedó <strong>pendiente de aprobación</strong>. En cuanto confirmemos la acreditación, vamos a habilitar tu pedido y te avisamos por email.'
       : 'En cuanto Mercado Pago confirme tu pago, vamos a empezar a preparar tu pedido.';
@@ -65,11 +82,16 @@ Deno.serve(async (req) => {
         <table style="width:100%;border-collapse:collapse;margin:20px 0;">
           ${itemsHtml}
           <tr>
+            <td style="padding:8px 0;">${order.shipping_zone || 'Envío'}</td>
+            <td style="padding:8px 0;text-align:right;">${formatPrice(order.shipping_cost)}</td>
+          </tr>
+          <tr>
             <td style="padding:10px 0 0;font-weight:bold;">Total</td>
             <td style="padding:10px 0 0;font-weight:bold;text-align:right;">${formatPrice(order.total)}</td>
           </tr>
         </table>
         <p style="color:#3C5763;">${paymentNote}</p>
+        ${bankHtml}
         <p style="color:#3C5763;">
           <strong>Envío a:</strong><br>
           ${order.direccion}${order.depto ? ', ' + order.depto : ''}, ${order.localidad}, ${order.provincia}
@@ -86,6 +108,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: FROM_EMAIL,
         to: order.email,
+        reply_to: Deno.env.get('ORDERS_NOTIFY_EMAIL') || 'info@ladflooring.com',
         subject: `Confirmación de tu pedido #${order.id} — Lad Flooring`,
         html,
       }),
