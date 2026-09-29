@@ -197,6 +197,17 @@
         <div id="bankMsg" style="font-size:0.85rem;margin-bottom:12px;"></div>
         <button type="submit" class="btn btn-primary">Guardar datos</button>
       </form>
+
+      <h3 style="margin-top:40px;">Optimizar fotos ya subidas</h3>
+      <p style="font-size:0.88rem;color:#5C7784;max-width:640px;">Las fotos que se subieron antes de que el admin las achicara automáticamente pesan varios MB y hacen lenta la web con datos móviles. Esto las reemplaza por una versión liviana (máximo 2000 px, formato WebP) en productos, servicios y galerías. Los originales no se borran: quedan guardados en Supabase como respaldo.</p>
+      <div class="form-card" style="max-width:640px;margin:0;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-outline" style="color:var(--navy);border-color:var(--navy);" id="btnAnalyzePhotos">Analizar</button>
+          <button type="button" class="btn btn-primary" id="btnOptimizePhotos" disabled>Achicar fotos</button>
+        </div>
+        <div id="optimizeSummary" style="font-size:0.9rem;margin-top:14px;"></div>
+        <div id="optimizeLog" style="font-size:0.8rem;color:#5C7784;margin-top:10px;max-height:260px;overflow-y:auto;"></div>
+      </div>
     </div>
 
     <div id="tabAdminSuscriptores" style="display:none;">
@@ -515,7 +526,7 @@
      Las fotos chicas, los GIF/SVG y los videos se suben tal cual; si algo falla, se sube la original. */
   const LAD_MAX_PHOTO_SIDE = 2000;
   const LAD_COMPRESS_OVER_BYTES = 600 * 1024;
-  async function ladCompressImage(file) {
+  async function ladCompressImage(file, outType = 'image/webp') {
     if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
     try {
       const bitmap = await createImageBitmap(file);
@@ -526,9 +537,9 @@
       canvas.height = Math.round(bitmap.height * scale);
       canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
       bitmap.close();
-      const blob = await new Promise(res => canvas.toBlob(res, 'image/webp', 0.85));
-      if (!blob || blob.type !== 'image/webp' || blob.size >= file.size) return file;
-      return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' });
+      const blob = await new Promise(res => canvas.toBlob(res, outType, 0.85));
+      if (!blob || blob.type !== outType || blob.size >= file.size) return file;
+      return new File([blob], file.name.replace(/\.[^.]+$/, '') + (outType === 'image/jpeg' ? '.jpg' : '.webp'), { type: outType });
     } catch (e) {
       console.warn('[Lad Flooring] No se pudo achicar la foto, se sube la original:', e);
       return file;
@@ -1208,6 +1219,127 @@
     msg.style.color = error ? '#A94442' : '#3d8a5c';
     msg.textContent = error ? 'No pudimos guardar: ' + error.message : '¡Datos guardados! Ya se muestran en el checkout.';
     if (!error) document.getElementById('bankCbu').value = value.cbu;
+  });
+
+  // ---------- Configuración: optimizar fotos ya subidas ----------
+  // Busca las fotos del bucket product-images que usan productos, servicios, galerías y trabajos,
+  // y reemplaza las pesadas por una versión achicada (ladCompressImage). Los originales no se borran.
+  const STORAGE_MARKER = '/storage/v1/object/public/product-images/';
+  let photosToOptimize = [];
+
+  async function collectPhotoRefs() {
+    const refs = [];
+    const add = (table, id, url) => {
+      if (typeof url === 'string' && url.includes(STORAGE_MARKER) && !ladIsVideoUrl(url)) refs.push({ table, id, url });
+    };
+    for (const table of ['products', 'services', 'product_images', 'service_images']) {
+      const { data, error } = await ladSupabase.from(table).select('id, image_url');
+      if (error) throw new Error(`${table}: ${error.message}`);
+      data.forEach(r => add(table, r.id, r.image_url));
+    }
+    const { data: projects, error } = await ladSupabase.from('projects').select('id, images');
+    if (!error) (projects || []).forEach(p => (p.images || []).forEach(u => add('projects', p.id, u)));
+    return refs;
+  }
+
+  function optimizeLog(text, color) {
+    const log = document.getElementById('optimizeLog');
+    log.insertAdjacentHTML('beforeend', `<div style="${color ? 'color:' + color + ';' : ''}">${ladEscape(text)}</div>`);
+    log.scrollTop = log.scrollHeight;
+  }
+  const toMB = (bytes) => (bytes / 1048576).toFixed(1) + ' MB';
+
+  document.getElementById('btnAnalyzePhotos').addEventListener('click', async () => {
+    const btn = document.getElementById('btnAnalyzePhotos');
+    const summary = document.getElementById('optimizeSummary');
+    document.getElementById('optimizeLog').innerHTML = '';
+    document.getElementById('btnOptimizePhotos').disabled = true;
+    btn.disabled = true;
+    summary.style.color = '#5C7784';
+    summary.textContent = 'Analizando...';
+    try {
+      const refs = await collectPhotoRefs();
+      const urls = [...new Set(refs.map(r => r.url))];
+      const sizes = await Promise.all(urls.map(async url => {
+        const res = await fetch(url, { method: 'HEAD' });
+        return { url, size: +res.headers.get('content-length') || 0 };
+      }));
+      photosToOptimize = sizes
+        .filter(s => s.size > LAD_COMPRESS_OVER_BYTES && !/\.webp$/i.test(s.url))
+        .map(s => ({ ...s, refs: refs.filter(r => r.url === s.url) }));
+      const total = photosToOptimize.reduce((sum, p) => sum + p.size, 0);
+      summary.style.color = 'var(--navy)';
+      summary.innerHTML = photosToOptimize.length
+        ? `Hay <strong>${photosToOptimize.length}</strong> fotos pesadas (<strong>${toMB(total)}</strong> en total) de ${urls.length} fotos subidas. Achicarlas lleva unos minutos: no cierres esta página mientras tanto.`
+        : `Las ${urls.length} fotos subidas ya están livianas. No hay nada para achicar.`;
+      document.getElementById('btnOptimizePhotos').disabled = !photosToOptimize.length;
+    } catch (err) {
+      summary.style.color = '#A94442';
+      summary.textContent = 'No pudimos analizar las fotos: ' + err.message;
+    }
+    btn.disabled = false;
+  });
+
+  document.getElementById('btnOptimizePhotos').addEventListener('click', async () => {
+    if (!confirm(`¿Achicar ${photosToOptimize.length} fotos? Los originales quedan guardados como respaldo.`)) return;
+    const btnOpt = document.getElementById('btnOptimizePhotos');
+    const btnAn = document.getElementById('btnAnalyzePhotos');
+    const summary = document.getElementById('optimizeSummary');
+    btnOpt.disabled = btnAn.disabled = true;
+    document.getElementById('optimizeLog').innerHTML = '';
+    let before = 0, after = 0, done = 0, failed = 0;
+
+    for (const [n, photo] of photosToOptimize.entries()) {
+      const name = decodeURIComponent(photo.url.split('/').pop());
+      summary.textContent = `Achicando ${n + 1} de ${photosToOptimize.length}...`;
+      try {
+        const blob = await (await fetch(photo.url)).blob();
+        const original = new File([blob], name, { type: blob.type });
+        let small = await ladCompressImage(original);
+        if (small === original) { optimizeLog(`• ${name}: no se pudo achicar más, queda igual`); continue; }
+
+        const folder = photo.url.slice(photo.url.indexOf(STORAGE_MARKER) + STORAGE_MARKER.length).split('/')[0] || 'products';
+        const newPath = (ext) => `${folder}/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+        let path = newPath('webp');
+        let { error: upError } = await ladSupabase.storage.from('product-images').upload(path, small);
+        // Plan B: si el bucket no acepta WebP y la original es JPG, la achicamos en JPG
+        if (upError && original.type === 'image/jpeg') {
+          const jpg = await ladCompressImage(original, 'image/jpeg');
+          if (jpg !== original) {
+            small = jpg;
+            path = newPath('jpg');
+            ({ error: upError } = await ladSupabase.storage.from('product-images').upload(path, small));
+          }
+        }
+        if (upError) throw upError;
+        const newUrl = ladSupabase.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+
+        // Actualizamos cada lugar que usaba la foto original
+        for (const ref of photo.refs) {
+          let error;
+          if (ref.table === 'projects') {
+            const { data: p } = await ladSupabase.from('projects').select('images').eq('id', ref.id).single();
+            ({ error } = await ladSupabase.from('projects').update({ images: p.images.map(u => u === photo.url ? newUrl : u) }).eq('id', ref.id));
+          } else {
+            ({ error } = await ladSupabase.from(ref.table).update({ image_url: newUrl }).eq('id', ref.id));
+          }
+          if (error) throw error;
+        }
+        before += photo.size; after += small.size; done++;
+        optimizeLog(`✓ ${name}: ${toMB(photo.size)} → ${toMB(small.size)}`, '#3d8a5c');
+      } catch (err) {
+        failed++;
+        optimizeLog(`✕ ${name}: ${err.message || err}`, '#A94442');
+      }
+    }
+
+    summary.style.color = failed ? '#8A6417' : '#3d8a5c';
+    summary.innerHTML = `Listo: <strong>${done}</strong> fotos achicadas, de ${toMB(before)} a <strong>${toMB(after)}</strong>.` +
+      (failed ? ` ${failed} no se pudieron achicar (ver detalle).` : '');
+    photosToOptimize = [];
+    btnAn.disabled = false;
+    loadAdminProducts();
+    loadAdminServices();
   });
 
   // ---------- Cotizaciones ----------
