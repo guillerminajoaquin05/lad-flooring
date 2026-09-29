@@ -491,10 +491,42 @@
     el.style.cssText = 'width:64px;height:64px;flex-shrink:0;' + ladImgBg(value);
   }
 
-  async function ladUploadImage(file, prefix) {
-    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-    const path = `${prefix}/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
-    const { error } = await ladSupabase.storage.from('product-images').upload(path, file);
+  /* Achica las fotos antes de subirlas (las del celular pesan varios MB y hacen lenta la web):
+     máximo 2000 px de lado, en WebP (pesa poco y conserva la transparencia de las fotos de producto).
+     Las fotos chicas, los GIF/SVG y los videos se suben tal cual; si algo falla, se sube la original. */
+  const LAD_MAX_PHOTO_SIDE = 2000;
+  const LAD_COMPRESS_OVER_BYTES = 600 * 1024;
+  async function ladCompressImage(file) {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+    try {
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, LAD_MAX_PHOTO_SIDE / Math.max(bitmap.width, bitmap.height));
+      if (scale === 1 && file.size <= LAD_COMPRESS_OVER_BYTES) { bitmap.close(); return file; }
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
+      canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close();
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/webp', 0.85));
+      if (!blob || blob.type !== 'image/webp' || blob.size >= file.size) return file;
+      return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' });
+    } catch (e) {
+      console.warn('[Lad Flooring] No se pudo achicar la foto, se sube la original:', e);
+      return file;
+    }
+  }
+
+  async function ladUploadImage(original, prefix) {
+    const upload = async (file) => {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const path = `${prefix}/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+      const { error } = await ladSupabase.storage.from('product-images').upload(path, file);
+      return { path, error };
+    };
+    const compressed = await ladCompressImage(original);
+    let { path, error } = await upload(compressed);
+    // Si la versión achicada no se acepta (por ejemplo, el bucket no admite WebP), probamos con la original
+    if (error && compressed !== original) ({ path, error } = await upload(original));
     if (error) throw error;
     const { data } = ladSupabase.storage.from('product-images').getPublicUrl(path);
     return data.publicUrl;
