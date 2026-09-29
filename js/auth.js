@@ -17,7 +17,24 @@ async function ladGetSession() {
     .eq('id', data.session.user.id)
     .single();
 
+  if (profile) await ladFillNameFromProvider(profile, data.session.user);
   return { ...data.session.user, ...profile };
+}
+
+/* Quien entra con Google no pasa por el formulario de registro: completamos nombre y apellido
+   con los de su cuenta de Google, solo si están vacíos (nunca pisamos lo que la persona cargó). */
+async function ladFillNameFromProvider(profile, user) {
+  if (profile.nombre && profile.apellido) return;
+  const meta = user.user_metadata || {};
+  const full = String(meta.full_name || meta.name || '').trim();
+  const nombre = String(meta.given_name || '').trim() || full.split(/\s+/)[0] || '';
+  const apellido = String(meta.family_name || '').trim() || (full.includes(' ') ? full.slice(full.indexOf(' ') + 1).trim() : '');
+  const changes = {};
+  if (!profile.nombre && nombre) changes.nombre = nombre;
+  if (!profile.apellido && apellido) changes.apellido = apellido;
+  if (!Object.keys(changes).length) return;
+  const { error } = await ladSupabase.from('profiles').update(changes).eq('id', user.id);
+  if (!error) Object.assign(profile, changes);
 }
 
 async function ladLogout() {
