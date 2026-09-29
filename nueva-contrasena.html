@@ -71,13 +71,19 @@ function show(id) {
   });
 }
 
-/* El link del email trae un código de un solo uso; supabase-js lo canjea solo al cargar
-   la página y deja una sesión de recuperación. Si el link trae un error (vencido, ya usado)
-   o no se arma la sesión, mostramos cómo pedir otro. */
+/* El link del email (template "Reset Password" de Supabase) trae ?token_hash=...&type=recovery.
+   El código es de un solo uso y NO se canjea al abrir la página: se canjea recién al tocar
+   "Guardar contraseña". Así, si un programa de email (Outlook, Hotmail, antivirus) abre el
+   link antes que la persona para revisarlo, el link no queda gastado.
+   Por compatibilidad también acepta el link anterior de Supabase, que se canjea solo al cargar. */
+const query = new URLSearchParams(window.location.search);
+const tokenHash = query.get('token_hash');
+let tokenVerified = false;
+
 (async function init() {
   const hash = new URLSearchParams(window.location.hash.slice(1));
-  const query = new URLSearchParams(window.location.search);
   if (!ladSupabase || hash.get('error') || query.get('error')) { show('viewVencido'); return; }
+  if (tokenHash) { show('viewForm'); return; }
 
   let recovering = false;
   ladSupabase.auth.onAuthStateChange((event) => {
@@ -102,6 +108,20 @@ document.getElementById('formNueva').addEventListener('submit', async function (
   const btn = this.querySelector('button[type="submit"]');
   btn.disabled = true;
   btn.textContent = 'Guardando...';
+
+  // Recién ahora gastamos el código del link (queda una sesión para poder cambiar la contraseña)
+  if (tokenHash && !tokenVerified) {
+    const { error: verifyError } = await ladSupabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' });
+    if (verifyError) {
+      btn.disabled = false;
+      btn.textContent = 'Guardar contraseña';
+      show('viewVencido');
+      return;
+    }
+    tokenVerified = true;
+    history.replaceState(null, '', window.location.pathname);  // saca el código de la barra de direcciones
+  }
+
   const { error } = await ladSupabase.auth.updateUser({ password: p1 });
   btn.disabled = false;
   btn.textContent = 'Guardar contraseña';
