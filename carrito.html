@@ -73,11 +73,7 @@
               <option value="lejano">Tucumán</option>
             </select>
           </div>
-          <div class="field">
-            <label>Código Postal</label>
-            <input type="text" id="postcode" placeholder="Ej: 1642">
-          </div>
-          <button class="btn btn-navy" id="btnActualizarTotales">Actualizar Totales</button>
+          <p style="font-size:0.85rem;color:#5C7784;margin-top:0;">El costo de envío depende de la provincia de entrega.</p>
         </div>
 
         <div class="totales-carrito">
@@ -192,7 +188,6 @@
   }
 
   document.getElementById('provinciaSelect').addEventListener('change', () => { updateZonaLabel(); updateSummary(); });
-  document.getElementById('btnActualizarTotales').addEventListener('click', () => { updateZonaLabel(); updateSummary(); });
 
   document.getElementById('finalizarPedidoBtn').addEventListener('click', async (e) => {
     e.preventDefault();

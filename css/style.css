@@ -115,6 +115,10 @@ img { max-width: 100%; display: block; }
 
 .section { padding: var(--space-6) 0; }
 .section-tight { padding: var(--space-5) 0; }
+@media (max-width: 600px) {
+  .section { padding: var(--space-5) 0; }
+  .section-tight { padding: 40px 0; }
+}
 .section-header { max-width: 640px; margin: 0 auto var(--space-4); text-align: center; }
 .section-header p { color: #5C7784; }
 
@@ -357,7 +361,10 @@ img { max-width: 100%; display: block; }
   background: transparent;
   cursor: pointer;
   padding: 0;
+  position: relative;
 }
+/* Zona táctil más grande que el puntito, para poder tocarlo con el dedo */
+.hero-dots button::before { content: ''; position: absolute; inset: -9px; }
 .hero-dots button.active { background: var(--cream); }
 .hero-arrow {
   position: absolute; top: 50%; transform: translateY(-50%);
@@ -413,6 +420,10 @@ img { max-width: 100%; display: block; }
   background: linear-gradient(135deg, var(--gold), var(--dusty-rose));
   z-index: 0;
   opacity: 0.5;
+}
+@media (max-width: 700px) {
+  /* En celular el recuadro de color no puede pasar el margen de la pantalla (16px) */
+  .media-stack::after { inset: 12px -12px -12px 12px; }
 }
 .bg-blob { position: absolute; border-radius: 50%; filter: blur(60px); z-index: 0; pointer-events: none; opacity: 0.5; }
 .section-decorated { position: relative; overflow: hidden; }
@@ -544,7 +555,7 @@ img { max-width: 100%; display: block; }
   border-radius: 20px;
 }
 .badge-outline { background: transparent; border: 1px solid var(--steel-blue); color: var(--steel-blue); }
-.badge-sm { font-size: 0.62rem; padding: 3px 8px; letter-spacing: 0.6px; }
+.badge-sm { font-size: 0.68rem; padding: 3px 8px; letter-spacing: 0.6px; }
 .service-tags { display: flex; gap: 6px; flex-wrap: wrap; }
 
 /* ---------- Formularios ---------- */
@@ -559,6 +570,17 @@ img { max-width: 100%; display: block; }
 }
 @media (max-width: 480px) {
   .form-card { padding: 20px; }
+}
+
+/* Grillas de productos en celular: dos por fila, con tarjetas compactas (tienda y "productos relacionados") */
+@media (max-width: 600px) {
+  .product-grid-compact { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .product-grid-compact .card-img { height: 150px; }
+  .product-grid-compact .card-body { padding: 12px 12px 8px; }
+  .product-grid-compact .card-body h3 { font-size: 0.95rem; line-height: 1.3; }
+  .product-grid-compact .card-footer { flex-direction: column; align-items: stretch; padding: 0 12px 12px; gap: 8px; }
+  .product-grid-compact .price { font-size: 1.05rem; }
+  .product-grid-compact .card-footer .btn { width: 100%; justify-content: center; }
 }
 .field { margin-bottom: var(--space-2); }
 .field label {
