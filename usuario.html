@@ -88,8 +88,8 @@
   }
   function orderPaymentNote(o) {
     if (o.payment_status === 'pendiente' && o.payment_method === 'transferencia') {
-      const wa = 'https://wa.me/5491126371921?text=' + encodeURIComponent(`Hola! Te mando el comprobante de la transferencia del pedido #${o.id} por ${ladFormatPrice(o.total)}.`);
-      return `<p style="font-size:0.85rem;color:#8A6417;margin:8px 0 0;">Estamos esperando tu transferencia. Los datos te llegaron por email. Cuando transfieras, <a href="${wa}" target="_blank" rel="noopener" style="color:var(--gold);">mandanos el comprobante por WhatsApp</a>.</p>`;
+      const wa = 'https://wa.me/5491126371921?text=' + encodeURIComponent(`Hola! Te escribo por la transferencia del pedido #${o.id} por ${ladFormatPrice(o.total)}.`);
+      return `<p style="font-size:0.85rem;color:#8A6417;margin:8px 0 0;">Estamos esperando tu transferencia. <a href="${wa}" target="_blank" rel="noopener" style="color:var(--gold);">Escribinos por WhatsApp</a> si necesitás los datos para transferir o para mandarnos el comprobante.</p>`;
     }
     if (o.payment_status === 'pendiente') return '<p style="font-size:0.85rem;color:#8A6417;margin:8px 0 0;">Tu pago todavía se está procesando. Te avisamos por email apenas se confirme.</p>';
     if (o.payment_status === 'rechazado') return '<p style="font-size:0.85rem;color:#A94442;margin:8px 0 0;">El pago no se pudo completar. Podés volver a comprar desde la tienda o escribirnos por WhatsApp.</p>';
