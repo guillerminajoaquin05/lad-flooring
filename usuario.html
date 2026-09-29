@@ -20,6 +20,7 @@
   .status-entregado { background:#DCEEE1; color:#2F6B45; }
   .status-camino { background:#DCE9F0; color:#2C5E77; }
   .status-pendiente { background:#F5E6C8; color:#8A6417; }
+  .status-rechazado { background:#F6DADA; color:#A94442; }
   .order-item { display:flex; align-items:center; gap:14px; padding:8px 0; }
   .order-item .ph { width:56px; height:56px; border-radius:var(--radius-sm); flex-shrink:0; }
   @media (max-width: 800px) { .account-layout { grid-template-columns: 1fr; } }
@@ -58,7 +59,8 @@
         </div>
 
         <div id="tabEnvios" style="display:none;">
-          <p>Para ver el detalle y seguimiento de tus envíos activos, visitá la sección de <a href="envio.html" style="color:var(--gold);">Seguimiento de Envío</a>.</p>
+          <h3 style="margin-bottom:16px;">Seguimiento de envíos</h3>
+          <div id="shipmentsList"><p style="color:#8199a3;">Cargando...</p></div>
         </div>
       </div>
     </div>
@@ -77,6 +79,46 @@
   const statusLabel = { preparando: 'Preparando', despachado: 'Despachado', en_camino: 'En camino', entregado: 'Entregado' };
   const statusClass = { preparando: 'pendiente', despachado: 'pendiente', en_camino: 'camino', entregado: 'entregado' };
 
+  /* Mientras el pago no está aprobado, el estado del envío no dice nada útil:
+     mostramos el del pago (pendiente o rechazado). */
+  function orderPill(o) {
+    if (o.payment_status === 'pendiente') return '<span class="status-pill status-pendiente">Pago pendiente</span>';
+    if (o.payment_status === 'rechazado') return '<span class="status-pill status-rechazado">Pago rechazado</span>';
+    return `<span class="status-pill status-${statusClass[o.order_status] || 'pendiente'}">${statusLabel[o.order_status] || o.order_status}</span>`;
+  }
+  function orderPaymentNote(o) {
+    if (o.payment_status === 'pendiente' && o.payment_method === 'transferencia') {
+      const wa = 'https://wa.me/5491126371921?text=' + encodeURIComponent(`Hola! Te mando el comprobante de la transferencia del pedido #${o.id} por ${ladFormatPrice(o.total)}.`);
+      return `<p style="font-size:0.85rem;color:#8A6417;margin:8px 0 0;">Estamos esperando tu transferencia. Los datos te llegaron por email. Cuando transfieras, <a href="${wa}" target="_blank" rel="noopener" style="color:var(--gold);">mandanos el comprobante por WhatsApp</a>.</p>`;
+    }
+    if (o.payment_status === 'pendiente') return '<p style="font-size:0.85rem;color:#8A6417;margin:8px 0 0;">Tu pago todavía se está procesando. Te avisamos por email apenas se confirme.</p>';
+    if (o.payment_status === 'rechazado') return '<p style="font-size:0.85rem;color:#A94442;margin:8px 0 0;">El pago no se pudo completar. Podés volver a comprar desde la tienda o escribirnos por WhatsApp.</p>';
+    return '';
+  }
+
+  function renderShipments(orders) {
+    const wrap = document.getElementById('shipmentsList');
+    const active = orders.filter(o => o.payment_status === 'aprobado' && o.order_status !== 'entregado');
+    const delivered = orders.filter(o => o.payment_status === 'aprobado' && o.order_status === 'entregado');
+    if (!active.length && !delivered.length) {
+      wrap.innerHTML = '<p style="color:#8199a3;">Todavía no tenés envíos. Cuando se apruebe el pago de una compra, vas a poder seguirla desde acá.</p>';
+      return;
+    }
+    const row = (o) => `
+      <div class="order-card" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div>
+          <div style="font-weight:bold;color:var(--navy);">Pedido #${o.id}</div>
+          <div style="font-size:0.82rem;color:#5C7784;">${new Date(o.created_at).toLocaleDateString('es-AR')}${o.tracking_number ? ` · Seguimiento: ${String(o.tracking_number).replace(/[&<>"']/g, '')}` : ''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          ${orderPill(o)}
+          <a href="envio.html?pedido=${o.id}" class="btn btn-outline btn-sm" style="color:var(--navy);border-color:var(--navy);">Ver seguimiento</a>
+        </div>
+      </div>`;
+    wrap.innerHTML = (active.length ? active.map(row).join('') : '<p style="color:#8199a3;">No tenés envíos en curso.</p>') +
+      (delivered.length ? `<h4 style="margin:24px 0 12px;">Entregados</h4>${delivered.map(row).join('')}` : '');
+  }
+
   async function loadOrders() {
     const list = document.getElementById('ordersList');
     if (!ladSupabase) {
@@ -85,13 +127,15 @@
     }
     const { data: orders, error } = await ladSupabase
       .from('orders')
-      .select('id, created_at, order_status, total, order_items(qty, unit_price, variant, products(name, image_url))')
+      .select('*, order_items(qty, unit_price, variant, products(name, image_url))')
       .order('created_at', { ascending: false });
 
     if (error) {
       list.innerHTML = `<p style="color:#A94442;">No pudimos cargar tus compras: ${error.message}</p>`;
+      document.getElementById('shipmentsList').innerHTML = list.innerHTML;
       return;
     }
+    renderShipments(orders || []);
     if (!orders || orders.length === 0) {
       list.innerHTML = '<p style="color:#8199a3;">Todavía no hiciste ninguna compra. <a href="tienda.html" style="color:var(--gold);">Ir a la tienda</a></p>';
       return;
@@ -101,7 +145,7 @@
       <div class="order-card">
         <div class="order-head">
           <span>Pedido #${o.id} — ${new Date(o.created_at).toLocaleDateString('es-AR')}</span>
-          <span class="status-pill status-${statusClass[o.order_status] || 'pendiente'}">${statusLabel[o.order_status] || o.order_status}</span>
+          ${orderPill(o)}
         </div>
         ${o.order_items.map(item => `
           <div class="order-item">
@@ -112,6 +156,7 @@
           <strong>Total: ${ladFormatPrice(o.total)}</strong>
           <a href="envio.html?pedido=${o.id}" class="btn btn-outline btn-sm" style="color:var(--navy);border-color:var(--navy);">Ver seguimiento</a>
         </div>
+        ${orderPaymentNote(o)}
       </div>
     `).join('');
   }
