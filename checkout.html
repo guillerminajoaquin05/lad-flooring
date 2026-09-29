@@ -72,6 +72,7 @@
             <div class="field" id="fProvinciaInfo">
               <label>Provincia</label>
               <select id="provinciaInfo">
+                <option value="" disabled selected>Elegí tu provincia</option>
                 <option value="Ciudad Autónoma de Buenos Aires" data-zona="caba">Ciudad Autónoma de Buenos Aires</option>
                 <option value="Buenos Aires" data-zona="gba">Buenos Aires</option>
                 <option value="Córdoba" data-zona="cercano">Córdoba</option>
@@ -97,6 +98,7 @@
                 <option value="Tierra del Fuego" data-zona="lejano">Tierra del Fuego</option>
                 <option value="Tucumán" data-zona="lejano">Tucumán</option>
               </select>
+              <span class="form-error">Elegí la provincia de entrega.</span>
             </div>
           </div>
           <div class="field" id="fCpInfo" style="max-width:220px;">
@@ -135,7 +137,7 @@
           <label class="radio-card selected" data-pay="mp"><input type="radio" name="pay" value="mp" checked> Mercado Pago</label>
           <label class="radio-card" data-pay="transferencia"><input type="radio" name="pay" value="transferencia"> Transferencia bancaria</label>
           <div class="pay-note" id="transferNote">
-            Al elegir transferencia, tu compra queda <strong>pendiente de aprobación</strong> hasta que el equipo de Lad Flooring confirme la acreditación del pago y habilite manualmente el producto. Te vamos a avisar por email apenas esté confirmado.
+            Al elegir transferencia, tu compra queda <strong>pendiente de aprobación</strong> hasta que confirmemos que recibimos la transferencia. Apenas la veamos, preparamos tu pedido y te avisamos por email.
             <div id="bankDetailsNote"></div>
           </div>
         </div>
@@ -248,6 +250,7 @@
       { id: 'fTelefonoInfo', el: 'telefonoInfo', test: v => v.trim().length >= 6 },
       { id: 'fDireccionInfo', el: 'direccionInfo', test: v => v.trim().length > 0 },
       { id: 'fLocalidadInfo', el: 'localidadInfo', test: v => v.trim().length > 0 },
+      { id: 'fProvinciaInfo', el: 'provinciaInfo', test: v => v !== '' },
       { id: 'fCpInfo', el: 'cpInfo', test: v => v.trim().length > 0 }
     ];
     fields.forEach(f => {
@@ -289,7 +292,7 @@
     const total = subtotal + zona.price;
 
     document.getElementById('pagoSubtotal').textContent = ladFormatPrice(subtotal);
-    document.getElementById('pagoShippingLabel').textContent = zona.label;
+    document.getElementById('pagoShippingLabel').textContent = 'Envío a ' + document.getElementById('provinciaInfo').value;
     document.getElementById('pagoShippingValue').textContent = ladFormatPrice(zona.price);
     document.getElementById('pagoTotal').textContent = ladFormatPrice(total);
   }
@@ -379,7 +382,21 @@
     goToStep(4);
   });
 
-  document.getElementById('provinciaInfo').addEventListener('change', updatePagoTotals);
+  /* Arranca con la provincia elegida en el carrito; si no hay, queda "Elegí tu provincia"
+     para que nadie pague el envío de CABA sin darse cuenta. */
+  function restoreProvincia() {
+    let saved = null;
+    try { saved = localStorage.getItem('lad_provincia'); } catch (e) {}
+    const select = document.getElementById('provinciaInfo');
+    if (saved && Array.from(select.options).some(o => o.value === saved)) select.value = saved;
+  }
+  restoreProvincia();
+
+  document.getElementById('provinciaInfo').addEventListener('change', () => {
+    try { localStorage.setItem('lad_provincia', document.getElementById('provinciaInfo').value); } catch (e) {}
+    document.getElementById('fProvinciaInfo').classList.remove('has-error');
+    if (currentStep === 3) updatePagoTotals();
+  });
 
   renderStepper();
 

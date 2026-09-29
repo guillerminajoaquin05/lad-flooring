@@ -187,7 +187,20 @@
     document.getElementById('sumTotal').textContent = ladFormatPrice(total);
   }
 
-  document.getElementById('provinciaSelect').addEventListener('change', () => { updateZonaLabel(); updateSummary(); });
+  /* La provincia elegida acá se recuerda para que el checkout arranque con la misma */
+  function saveProvincia() {
+    const select = document.getElementById('provinciaSelect');
+    try { localStorage.setItem('lad_provincia', select.options[select.selectedIndex].text); } catch (e) {}
+  }
+  function restoreProvincia() {
+    let saved = null;
+    try { saved = localStorage.getItem('lad_provincia'); } catch (e) {}
+    const select = document.getElementById('provinciaSelect');
+    const idx = Array.from(select.options).findIndex(o => o.text === saved);
+    if (idx >= 0) select.selectedIndex = idx;
+  }
+
+  document.getElementById('provinciaSelect').addEventListener('change', () => { saveProvincia(); updateZonaLabel(); updateSummary(); });
 
   document.getElementById('finalizarPedidoBtn').addEventListener('click', async (e) => {
     e.preventDefault();
@@ -199,6 +212,7 @@
     }
   });
 
+  restoreProvincia();
   updateZonaLabel();
   renderCart();
 </script>
