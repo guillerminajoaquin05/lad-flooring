@@ -184,8 +184,8 @@
     cercano: { label: 'Envío Interior (zona cercana)', price: 8900 },
     lejano: { label: 'Envío Interior (zona lejana)', price: 13500 }
   };
-  /* La lista de provincias guarda el nombre real; la zona de envío va en data-zona.
-     El servidor vuelve a calcular la zona a partir de la provincia. */
+  /* Tarifa fija por zona (misma que quote-shipping usa mientras Correo Argentino no esté conectado).
+     Acá solo sirve de respaldo si la cotización no responde. La zona de cada provincia va en data-zona. */
   function selectedZone() {
     const select = document.getElementById('provinciaInfo');
     return shippingRates[select.options[select.selectedIndex].dataset.zona];
@@ -287,15 +287,53 @@
     await updatePagoTotals();
   }
 
+  /* El envío lo cotiza el servidor (función quote-shipping): Correo Argentino según el código postal,
+     o la tarifa fija por zona mientras Correo no esté conectado. Si la función no responde, mostramos
+     la tarifa fija; al confirmar el pedido, el servidor lo vuelve a calcular igual. */
+  let shippingQuote = null;
+  let quoteSeq = 0;
+  async function fetchShippingQuote() {
+    const provincia = document.getElementById('provinciaInfo').value;
+    const fallback = { source: 'fixed', price: selectedZone().price, label: selectedZone().label };
+    try {
+      const { data, error } = await ladSupabase.functions.invoke('quote-shipping', {
+        body: {
+          items: ladGetCart().map(i => ({ id: i.id, qty: i.qty })),
+          postalCode: document.getElementById('cpInfo').value,
+          provincia
+        }
+      });
+      if (error || !data || data.error || !(Number(data.price) >= 0)) return fallback;
+      return data;
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  function shippingLabelText(q) {
+    if (q.source !== 'correo') return 'Envío a ' + document.getElementById('provinciaInfo').value;
+    const days = q.deliveryTimeMin && q.deliveryTimeMax
+      ? ` (llega en ${q.deliveryTimeMin === q.deliveryTimeMax ? q.deliveryTimeMin : q.deliveryTimeMin + ' a ' + q.deliveryTimeMax} días hábiles)`
+      : '';
+    return q.label + days;
+  }
+
   async function updatePagoTotals() {
-    const subtotal = await ladCartTotal();
-    const zona = selectedZone();
-    const total = subtotal + zona.price;
+    const seq = ++quoteSeq;
+    const btn = document.getElementById('btnRealizarPedido');
+    btn.disabled = true;
+    document.getElementById('pagoShippingLabel').textContent = 'Envío';
+    document.getElementById('pagoShippingValue').textContent = 'Calculando...';
+
+    const [subtotal, quote] = await Promise.all([ladCartTotal(), fetchShippingQuote()]);
+    if (seq !== quoteSeq) return;  // cambiaron la provincia mientras cotizábamos: vale la cotización nueva
+    shippingQuote = quote;
 
     document.getElementById('pagoSubtotal').textContent = ladFormatPrice(subtotal);
-    document.getElementById('pagoShippingLabel').textContent = 'Envío a ' + document.getElementById('provinciaInfo').value;
-    document.getElementById('pagoShippingValue').textContent = ladFormatPrice(zona.price);
-    document.getElementById('pagoTotal').textContent = ladFormatPrice(total);
+    document.getElementById('pagoShippingLabel').textContent = shippingLabelText(quote);
+    document.getElementById('pagoShippingValue').textContent = ladFormatPrice(quote.price);
+    document.getElementById('pagoTotal').textContent = ladFormatPrice(subtotal + Number(quote.price));
+    btn.disabled = false;
   }
 
   document.querySelectorAll('input[name="pay"]').forEach(radio => {
@@ -318,7 +356,7 @@
       provincia: document.getElementById('provinciaInfo').value,
       codigoPostal: document.getElementById('cpInfo').value,
       notas: document.getElementById('notasPedido').value,
-      shippingZone: selectedZone().label
+      shippingZone: shippingQuote ? shippingQuote.label : selectedZone().label
     };
   }
 
@@ -330,7 +368,7 @@
       const p = cartProducts[idx];
       return { id: p.id, name: p.name, price: p.price, qty: item.qty, variant: item.variant || null };
     });
-    const shippingCost = selectedZone().price;
+    const shippingCost = shippingQuote ? shippingQuote.price : selectedZone().price;  // solo informativo: el servidor lo recalcula
     const shippingInfo = getShippingInfo();
 
     const btn = document.getElementById('btnRealizarPedido');

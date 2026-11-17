@@ -3,8 +3,8 @@
 // Devuelve el link de pago (init_point) al que redirigimos al comprador.
 //
 // SEGURIDAD: el precio de cada producto y el costo de envío se RECALCULAN acá
-// adentro a partir de datos de confianza (la tabla products y el mapa de tarifas
-// de envío). Nunca se usa el price/shippingCost que manda el navegador para
+// adentro a partir de datos de confianza (la tabla products y la cotización de
+// la función quote-shipping). Nunca se usa el price/shippingCost que manda el navegador para
 // calcular el total — eso evita que alguien arme el pedido a mano (por consola,
 // sin pasar por la tienda) y le pida a Mercado Pago que le cobre lo que quiera.
 
@@ -19,30 +19,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-/* Únicas fuentes de verdad para plata: si en algún momento cambian las tarifas
-   de envío o las provincias de cada zona, hay que actualizarlos acá (y en
-   create-order/index.ts, que tiene una copia igual). */
-const SHIPPING_ZONES: Record<string, { label: string; price: number }> = {
-  caba: { label: 'Envío CABA', price: 4500 },
-  gba: { label: 'Envío GBA', price: 6800 },
-  cercano: { label: 'Envío Interior (zona cercana)', price: 8900 },
-  lejano: { label: 'Envío Interior (zona lejana)', price: 13500 },
-};
-const PROVINCE_ZONES: Record<string, string> = {
-  'Ciudad Autónoma de Buenos Aires': 'caba',
-  'Buenos Aires': 'gba',
-  'Córdoba': 'cercano', 'Entre Ríos': 'cercano', 'La Pampa': 'cercano', 'Mendoza': 'cercano',
-  'San Juan': 'cercano', 'San Luis': 'cercano', 'Santa Fe': 'cercano',
-  'Catamarca': 'lejano', 'Chaco': 'lejano', 'Chubut': 'lejano', 'Corrientes': 'lejano', 'Formosa': 'lejano',
-  'Jujuy': 'lejano', 'La Rioja': 'lejano', 'Misiones': 'lejano', 'Neuquén': 'lejano', 'Río Negro': 'lejano',
-  'Salta': 'lejano', 'Santa Cruz': 'lejano', 'Santiago del Estero': 'lejano', 'Tierra del Fuego': 'lejano',
-  'Tucumán': 'lejano',
-};
-
-// La zona sale de la provincia real. También acepta un código de zona, que es lo que mandaba el checkout anterior.
-function shippingZoneFor(provincia: string) {
-  const key = PROVINCE_ZONES[provincia] || (SHIPPING_ZONES[provincia] ? provincia : null);
-  return key ? SHIPPING_ZONES[key] : null;
+/* El envío lo calcula la función quote-shipping (Correo Argentino en vivo, o la tarifa fija por zona
+   si Correo no está conectado o no responde). Es la misma cuenta que le mostramos al comprador en el
+   checkout, y acá se vuelve a pedir del lado del servidor: nunca usamos el costo que manda el navegador. */
+async function quoteShipping(items: any[], shippingInfo: any): Promise<{ price: number; label: string } | { error: string }> {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/quote-shipping`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      items: items.map((i: any) => ({ id: i.id, qty: i.qty })),
+      postalCode: shippingInfo?.codigoPostal,
+      provincia: shippingInfo?.provincia,
+    }),
+  }).catch(() => null);
+  const data = res ? await res.json().catch(() => ({})) : {};
+  if (!res || !res.ok || !(Number(data.price) >= 0) || !data.label) return { error: data.error || 'No pudimos calcular el envío' };
+  return { price: Number(data.price), label: String(data.label) };
 }
 
 function json(body: unknown, status = 200) {
@@ -108,10 +100,10 @@ Deno.serve(async (req) => {
     });
     const subtotal = pricedItems.reduce((sum, i) => sum + i.price * i.qty, 0);
 
-    // 2. Recalculamos el envío a partir de la zona (ignoramos el shippingCost del navegador).
-    const zone = shippingZoneFor(shippingInfo?.provincia);
-    if (!zone) return json({ error: 'Provincia de envío inválida' }, 400);
-    const shippingCost = zone.price;
+    // 2. Recalculamos el envío con quote-shipping (ignoramos el shippingCost del navegador).
+    const shipping = await quoteShipping(pricedItems, shippingInfo);
+    if ('error' in shipping) return json({ error: shipping.error }, 400);
+    const shippingCost = shipping.price;
 
     const total = subtotal + shippingCost;
 
@@ -130,7 +122,7 @@ Deno.serve(async (req) => {
         provincia: shippingInfo.provincia,
         codigo_postal: shippingInfo.codigoPostal,
         notas: shippingInfo.notas || null,
-        shipping_zone: zone.label,
+        shipping_zone: shipping.label,
         shipping_cost: shippingCost,
         coupon_code: null,
         subtotal,
@@ -173,7 +165,7 @@ Deno.serve(async (req) => {
           })),
           // El envío se cobra como un ítem más, así Mercado Pago le cobra al
           // comprador productos + envío juntos (coincide con el "total" del pedido).
-          { title: zone.label, quantity: 1, unit_price: shippingCost, currency_id: 'ARS' },
+          { title: shipping.label, quantity: 1, unit_price: shippingCost, currency_id: 'ARS' },
         ],
         payer: { name: shippingInfo.nombre, email: shippingInfo.email },
         back_urls: {

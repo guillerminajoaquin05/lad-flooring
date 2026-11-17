@@ -7,7 +7,7 @@
 <title>Panel de Administración — Lad Flooring</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="assets/img/logo-mark.svg">
-<link rel="stylesheet" href="css/style.css?v=20261117b">
+<link rel="stylesheet" href="css/style.css?v=20261117d">
 <style>
   .admin-table-wrap { border-radius: var(--radius); overflow:hidden; box-shadow: var(--shadow-card); border:1px solid var(--border); }
   .admin-table { width:100%; border-collapse:collapse; background:var(--white); }
@@ -222,6 +222,29 @@
         <button type="submit" class="btn btn-primary">Guardar datos</button>
       </form>
 
+      <h3 style="margin-top:40px;">Envíos</h3>
+      <p style="font-size:0.88rem;color:#5C7784;max-width:640px;">Cuando Correo Argentino esté conectado, el envío se cotiza en vivo según el código postal del cliente y el peso y medidas de los productos. Mientras tanto (o si Correo no responde) se cobra la tarifa fija por zona: CABA $4.500, GBA $6.800, interior cercano $8.900 e interior lejano $13.500.</p>
+      <form id="shippingForm" class="form-card" style="max-width:640px;margin:0;">
+        <div class="grid grid-2" style="gap:16px;">
+          <div class="field"><label>Código postal de origen</label><input type="text" id="shipOriginCp" placeholder="Desde donde se despacha, ej: 1425"></div>
+          <div class="field"><label>Recargo por envío ($)</label><input type="number" id="shipSurcharge" min="0" placeholder="0"></div>
+        </div>
+        <p style="font-size:0.78rem;color:#8199a3;margin-top:-6px;">El recargo se suma a cada cotización de Correo (por ejemplo, para cubrir el embalaje). No se suma a la tarifa fija.</p>
+        <div id="shippingMsg" style="font-size:0.85rem;margin-bottom:12px;"></div>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </form>
+      <div class="form-card" style="max-width:640px;margin:16px 0 0;">
+        <h4 class="mt-0">Probar una cotización</h4>
+        <div class="grid grid-2" style="gap:16px;">
+          <div class="field"><label>Producto</label><select id="shipTestProduct"></select></div>
+          <div class="field"><label>Cantidad</label><input type="number" id="shipTestQty" min="1" value="1"></div>
+          <div class="field"><label>Código postal de destino</label><input type="text" id="shipTestCp" placeholder="Ej: 5000"></div>
+          <div class="field"><label>Provincia de destino</label><select id="shipTestProvince"></select></div>
+        </div>
+        <button type="button" class="btn btn-outline" style="color:var(--navy);border-color:var(--navy);" id="btnShipTest">Cotizar</button>
+        <div id="shipTestResult" style="font-size:0.9rem;margin-top:14px;"></div>
+      </div>
+
       <h3 style="margin-top:40px;">Optimizar fotos ya subidas</h3>
       <p style="font-size:0.88rem;color:#5C7784;max-width:640px;">Las fotos que se subieron antes de que el admin las achicara automáticamente pesan varios MB y hacen lenta la web con datos móviles. Esto las reemplaza por una versión liviana (máximo 2000 px, formato WebP) en productos, servicios y galerías. Los originales no se borran: quedan guardados en Supabase como respaldo.</p>
       <div class="form-card" style="max-width:640px;margin:0;">
@@ -338,6 +361,16 @@
         </div>
       </div>
       <p style="font-size:0.78rem;color:#8199a3;margin-top:-10px;">La "Familia" agrupa productos relacionados (ej: la mopa y sus repuestos) para que aparezcan juntos en la tienda.</p>
+      <div class="field" style="margin-bottom:6px;">
+        <label>Peso y medidas ya embalado (para cotizar el envío con Correo Argentino)</label>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));gap:10px;">
+          <input type="number" id="pWeightG" min="1" max="25000" placeholder="Peso (g)" title="Peso en gramos">
+          <input type="number" id="pLengthCm" min="1" max="150" placeholder="Largo (cm)" title="Largo en cm">
+          <input type="number" id="pWidthCm" min="1" max="150" placeholder="Ancho (cm)" title="Ancho en cm">
+          <input type="number" id="pHeightCm" min="1" max="150" placeholder="Alto (cm)" title="Alto en cm">
+        </div>
+      </div>
+      <p style="font-size:0.78rem;color:#8199a3;margin-top:0;">Peso en gramos (1 kg = 1000 g) y medidas en centímetros. Si los dejás vacíos, se cotiza como una caja de 1 kg de 10 x 10 x 10 cm.</p>
       <div class="field">
         <label>Opciones a elegir (opcional, un punto por línea)</label>
         <textarea id="pVariantOptions" rows="3" placeholder="Un ítem por renglón, ej:&#10;Madera&#10;Vinílico / Cerámica&#10;Aceitado/Encerado"></textarea>
@@ -538,12 +571,12 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-config.js"></script>
-<script src="js/products.js"></script>
+<script src="js/products.js?v=20261117d"></script>
 <script src="js/services.js?v=20260928b"></script>
 <script src="js/faqs.js"></script>
 <script src="js/cart.js"></script>
 <script src="js/auth.js"></script>
-<script src="js/common.js?v=20261117c"></script>
+<script src="js/common.js?v=20261117d"></script>
 <script>
   function ladSlugify(text) {
     return text.toLowerCase()
@@ -755,6 +788,7 @@
       .order('name');
     if (error) { alert('No pudimos cargar los productos: ' + error.message); return; }
     adminProducts = data.map(ladMapProduct);
+    fillShipTestProducts();
     renderAdminTable();
   }
 
@@ -816,6 +850,10 @@
     document.getElementById('pVariantOptions').value = (p.variantOptions || []).join('\n');
     document.getElementById('pUsageTier').value = p.usageTier || '';
     document.getElementById('pFamily').value = p.family || '';
+    document.getElementById('pWeightG').value = p.weightG || '';
+    document.getElementById('pLengthCm').value = p.lengthCm || '';
+    document.getElementById('pWidthCm').value = p.widthCm || '';
+    document.getElementById('pHeightCm').value = p.heightCm || '';
     document.getElementById('pImg').value = p.img;
     document.getElementById('pImgPlaceholder').value = ladIsImageUrl(p.img) ? 'ph-1' : p.img;
     document.getElementById('pImgFile').value = '';
@@ -882,6 +920,10 @@
       variant_options: document.getElementById('pVariantOptions').value.trim() || null,
       usage_tier: document.getElementById('pUsageTier').value || null,
       family: document.getElementById('pFamily').value.trim() || null,
+      weight_g: parseInt(document.getElementById('pWeightG').value) || null,
+      length_cm: parseInt(document.getElementById('pLengthCm').value) || null,
+      width_cm: parseInt(document.getElementById('pWidthCm').value) || null,
+      height_cm: parseInt(document.getElementById('pHeightCm').value) || null,
       image_url: document.getElementById('pImg').value,
       description: document.getElementById('pDescription').value,
       usage_info: document.getElementById('pUsageInfo').value || null,
@@ -1260,6 +1302,75 @@
     msg.style.color = error ? '#A94442' : '#3d8a5c';
     msg.textContent = error ? 'No pudimos guardar: ' + error.message : '¡Datos guardados! Ya se muestran en el checkout.';
     if (!error) document.getElementById('bankCbu').value = value.cbu;
+  });
+
+  // ---------- Configuración: envíos (Correo Argentino) ----------
+  const SHIP_PROVINCES = ['Ciudad Autónoma de Buenos Aires', 'Buenos Aires', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba',
+    'Corrientes', 'Entre Ríos', 'Formosa', 'Jujuy', 'La Pampa', 'La Rioja', 'Mendoza', 'Misiones', 'Neuquén', 'Río Negro',
+    'Salta', 'San Juan', 'San Luis', 'Santa Cruz', 'Santa Fe', 'Santiago del Estero', 'Tierra del Fuego', 'Tucumán'];
+  document.getElementById('shipTestProvince').innerHTML = SHIP_PROVINCES.map(p => `<option value="${p}">${p}</option>`).join('');
+
+  async function loadShippingSettings() {
+    const { data, error } = await ladSupabase.from('site_settings').select('value').eq('key', 'envios').maybeSingle();
+    const msg = document.getElementById('shippingMsg');
+    if (error) {
+      msg.style.color = '#A94442';
+      msg.textContent = 'No pudimos cargar la configuración de envíos: ' + error.message;
+      return;
+    }
+    const value = (data && data.value) || {};
+    document.getElementById('shipOriginCp').value = value.origen_cp || '';
+    document.getElementById('shipSurcharge').value = value.recargo || '';
+  }
+
+  function fillShipTestProducts() {
+    document.getElementById('shipTestProduct').innerHTML = adminProducts
+      .filter(p => !ladIsConsultOnly(p))
+      .map(p => `<option value="${ladEscape(p.id)}">${ladEscape(p.name)}${p.weightG ? '' : ' (sin peso cargado)'}</option>`).join('');
+  }
+
+  document.getElementById('shippingForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('shippingMsg');
+    const origenCp = document.getElementById('shipOriginCp').value.trim();
+    if (origenCp && !/\d{4}/.test(origenCp)) {
+      msg.style.color = '#A94442';
+      msg.textContent = 'El código postal tiene que tener 4 números (ej: 1425 o C1425ABC).';
+      return;
+    }
+    const value = { origen_cp: origenCp, recargo: Math.max(0, parseInt(document.getElementById('shipSurcharge').value) || 0) };
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    const { error } = await ladSupabase.from('site_settings')
+      .upsert({ key: 'envios', value, updated_at: new Date().toISOString() });
+    btn.disabled = false;
+    msg.style.color = error ? '#A94442' : '#3d8a5c';
+    msg.textContent = error ? 'No pudimos guardar: ' + error.message : '¡Guardado!';
+  });
+
+  document.getElementById('btnShipTest').addEventListener('click', async () => {
+    const out = document.getElementById('shipTestResult');
+    const btn = document.getElementById('btnShipTest');
+    btn.disabled = true;
+    out.style.color = '#5C7784';
+    out.textContent = 'Cotizando...';
+    const { data, error } = await ladSupabase.functions.invoke('quote-shipping', {
+      body: {
+        items: [{ id: document.getElementById('shipTestProduct').value, qty: parseInt(document.getElementById('shipTestQty').value) || 1 }],
+        postalCode: document.getElementById('shipTestCp').value,
+        provincia: document.getElementById('shipTestProvince').value
+      }
+    });
+    btn.disabled = false;
+    if (error || !data || data.error) {
+      out.style.color = '#A94442';
+      out.textContent = 'No se pudo cotizar: ' + (data && data.error ? data.error : (error ? error.message : 'error desconocido')) + '. ¿Ya está publicada la función quote-shipping?';
+      return;
+    }
+    out.style.color = 'var(--navy)';
+    out.innerHTML = data.source === 'correo'
+      ? `<strong>${ladFormatPrice(data.price)}</strong> · ${ladEscape(data.label)} <span style="color:#3d8a5c;">(cotizado en vivo con Correo Argentino)</span>`
+      : `<strong>${ladFormatPrice(data.price)}</strong> · ${ladEscape(data.label)} <span style="color:#8A6417;">(tarifa fija: Correo Argentino todavía no está conectado, falta el código postal de origen o Correo no respondió)</span>`;
   });
 
   // ---------- Configuración: optimizar fotos ya subidas ----------
@@ -1952,6 +2063,7 @@
     loadAdminQuotes();
     loadAdminArrepentimientos();
     loadBankSettings();
+    loadShippingSettings();
     loadAdminProjects();
     loadAdminFaqs();
     loadAdminSuscriptores();

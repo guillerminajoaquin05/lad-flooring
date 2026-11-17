@@ -19,7 +19,11 @@ function ladMapProduct(row) {
     usageInfo: row.usage_info,
     variantOptions: (row.variant_options || '').split('\n').map(v => v.trim()).filter(Boolean),
     family: row.family,
-    usageTier: row.usage_tier
+    usageTier: row.usage_tier,
+    weightG: row.weight_g,
+    lengthCm: row.length_cm,
+    widthCm: row.width_cm,
+    heightCm: row.height_cm
   };
 }
 
