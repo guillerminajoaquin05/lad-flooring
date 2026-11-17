@@ -8,6 +8,7 @@
   <url><loc>https://ladflooring.com/faq.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://ladflooring.com/terminos.html</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
   <url><loc>https://ladflooring.com/privacidad.html</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://ladflooring.com/arrepentimiento.html</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
   <url><loc>https://ladflooring.com/login.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://ladflooring.com/registro.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
 </urlset>

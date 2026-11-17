@@ -121,6 +121,7 @@ function ladFooterHTML() {
     <div class="footer-bottom">
       <div>© 2026 Lad Flooring — Todos los derechos reservados · <a href="terminos.html" style="color:inherit;">Términos y Condiciones</a> · <a href="privacidad.html" style="color:inherit;">Política de Privacidad</a></div>
       <div class="footer-legal">
+        <a href="arrepentimiento.html" class="footer-arrepentimiento">Botón de arrepentimiento</a>
         <a href="https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario" target="_blank" rel="noopener" style="color:inherit;">Defensa de las y los consumidores. Para reclamos ingresá aquí</a>
         ${LAD_DATA_FISCAL_URL ? `<a href="${LAD_DATA_FISCAL_URL}" target="_F960AFIPInfo" rel="noopener" class="footer-data-fiscal"><img src="https://www.afip.gob.ar/images/f960/DATAWEB.jpg" alt="Data Fiscal (ARCA)" width="44" height="60" loading="lazy"></a>` : ''}
       </div>

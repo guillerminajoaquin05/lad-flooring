@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="/js/preview-gate.js"></script>
+<title>Botón de arrepentimiento — Lad Flooring</title>
+<meta name="description" content="Cancelá tu compra online dentro de los 10 días corridos desde que recibiste el producto. No hace falta tener cuenta.">
+<meta property="og:title" content="Botón de arrepentimiento — Lad Flooring">
+<meta property="og:description" content="Cancelá tu compra online dentro de los 10 días corridos desde que recibiste el producto.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://ladflooring.com/arrepentimiento.html">
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .arr-wrap { max-width: 640px; margin: 0 auto; }
+  .arr-wrap > p, .arr-wrap li { color: #3C5763; }
+  .arr-wrap ul { padding-left: 1.2rem; margin-bottom: var(--space-3); }
+  .arr-code { font-size: 1.6rem; font-weight: bold; letter-spacing: 1px; color: var(--navy); margin: 8px 0 16px; }
+</style>
+</head>
+<body data-page="arrepentimiento">
+
+<div id="lad-header"></div>
+
+<section class="section-tight bg-navy text-center section-decorated">
+  <div class="bg-blob" style="width:300px;height:300px;top:-110px;left:15%;background:var(--gold);"></div>
+  <div class="bg-blob" style="width:260px;height:260px;bottom:-120px;right:12%;background:var(--steel-blue);"></div>
+  <div class="container">
+    <span class="eyebrow">Derecho de arrepentimiento</span>
+    <h1>Botón de arrepentimiento</h1>
+    <p style="max-width:600px;margin:0 auto;">Si compraste en nuestra tienda online, podés cancelar la compra dentro de los 10 días corridos desde que recibiste el producto.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="arr-wrap">
+      <p>De acuerdo con la Ley de Defensa del Consumidor (N.º 24.240), en las compras a distancia podés revocar la aceptación sin dar explicaciones. Para pedirlo:</p>
+      <ul>
+        <li>No necesitás tener cuenta ni iniciar sesión.</li>
+        <li>Completá el formulario. Al enviarlo te mostramos un <strong>código de solicitud</strong> y te lo mandamos por email.</li>
+        <li>El producto tiene que estar sin usar y en su embalaje original.</li>
+        <li>Te contactamos para coordinar la devolución del producto y el reintegro del dinero.</li>
+      </ul>
+
+      <div class="form-card" id="arrCard" style="max-width:none;margin:0;">
+        <form id="arrForm" novalidate>
+          <div class="field" id="fArrNombre">
+            <label for="arrNombre">Nombre y apellido</label>
+            <input type="text" id="arrNombre" autocomplete="name" required>
+            <span class="form-error">Ingresá tu nombre.</span>
+          </div>
+          <div class="grid grid-2" style="gap:16px;">
+            <div class="field" id="fArrEmail">
+              <label for="arrEmail">Email</label>
+              <input type="email" id="arrEmail" autocomplete="email" required>
+              <span class="form-error">Ingresá un email válido: ahí te llega la constancia.</span>
+            </div>
+            <div class="field">
+              <label for="arrTelefono">Teléfono (opcional)</label>
+              <input type="tel" id="arrTelefono" autocomplete="tel">
+            </div>
+          </div>
+          <div class="field">
+            <label for="arrPedido">Número de pedido (si lo tenés)</label>
+            <input type="text" id="arrPedido" placeholder="Lo encontrás en el email de confirmación de la compra">
+          </div>
+          <div class="field">
+            <label for="arrProductos">¿Qué productos querés devolver? (opcional)</label>
+            <textarea id="arrProductos" rows="2"></textarea>
+          </div>
+          <div class="field">
+            <label for="arrMotivo">Motivo (opcional)</label>
+            <textarea id="arrMotivo" rows="3"></textarea>
+          </div>
+          <div id="arrError" style="display:none;background:#F6DADA;color:#A94442;border-radius:var(--radius-sm);padding:12px 14px;font-size:0.9rem;margin-bottom:16px;"></div>
+          <button type="submit" class="btn btn-primary btn-block" id="arrSubmit">Enviar solicitud de arrepentimiento</button>
+        </form>
+
+        <div id="arrSuccess" style="display:none;text-align:center;">
+          <div style="font-size:2.4rem;margin-bottom:8px;">✓</div>
+          <h2 style="margin-bottom:6px;">Recibimos tu solicitud</h2>
+          <p style="margin:0;">Tu código de solicitud es:</p>
+          <div class="arr-code" id="arrCode"></div>
+          <p id="arrSuccessNote">Te lo mandamos también por email. Te vamos a contactar para coordinar la devolución y el reintegro.</p>
+          <a href="index.html" class="btn btn-outline" style="color:var(--navy);border-color:var(--navy);margin-top:12px;">Volver al inicio</a>
+        </div>
+      </div>
+
+      <p style="margin-top:24px;font-size:0.9rem;">¿Dudas? Escribinos a <a href="mailto:info@ladflooring.com" style="color:var(--gold);">info@ladflooring.com</a> o por <a href="https://wa.me/5491126371921" target="_blank" rel="noopener" style="color:var(--gold);">WhatsApp</a>.</p>
+    </div>
+  </div>
+</section>
+
+<div id="lad-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/products.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/common.js"></script>
+<script>
+  // Si viene desde un pedido (link del email o Mi cuenta), completamos el número
+  const pedidoParam = new URLSearchParams(window.location.search).get('pedido');
+  if (pedidoParam) document.getElementById('arrPedido').value = pedidoParam;
+
+  // Si tiene la sesión iniciada, completamos nombre y email (no es obligatorio estar logueado)
+  (async function prefill() {
+    const session = typeof ladGetSession === 'function' ? await ladGetSession() : null;
+    if (!session) return;
+    const nombre = [session.nombre, session.apellido].filter(Boolean).join(' ');
+    if (nombre && !document.getElementById('arrNombre').value) document.getElementById('arrNombre').value = nombre;
+    if (session.email && !document.getElementById('arrEmail').value) document.getElementById('arrEmail').value = session.email;
+  })();
+
+  document.getElementById('arrForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const val = id => document.getElementById(id).value.trim();
+    const nombreOk = val('arrNombre').length > 0;
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('arrEmail'));
+    document.getElementById('fArrNombre').classList.toggle('has-error', !nombreOk);
+    document.getElementById('fArrEmail').classList.toggle('has-error', !emailOk);
+    if (!nombreOk || !emailOk) return;
+
+    const errorBox = document.getElementById('arrError');
+    const submitBtn = document.getElementById('arrSubmit');
+    errorBox.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Enviando...';
+
+    try {
+      if (!ladSupabase) throw new Error('Supabase no conectado');
+      const id = crypto.randomUUID();
+      const codigo = 'ARR-' + id.slice(0, 8).toUpperCase();
+      const { error } = await ladSupabase.from('arrepentimientos').insert({
+        id,
+        codigo,
+        nombre: val('arrNombre'),
+        email: val('arrEmail'),
+        telefono: val('arrTelefono') || null,
+        pedido: val('arrPedido') || null,
+        productos: val('arrProductos') || null,
+        motivo: val('arrMotivo') || null
+      });
+      if (error) throw error;
+
+      // La solicitud ya quedó guardada (y se ve en el admin); los emails no bloquean
+      ladSupabase.functions.invoke('notify-arrepentimiento', { body: { id } })
+        .then(({ error }) => {
+          if (!error) return;
+          console.warn('[Lad Flooring] No se pudo mandar la constancia por email:', error.message);
+          document.getElementById('arrSuccessNote').textContent = 'Guardá este código: no pudimos mandarte el email en este momento. Igual recibimos tu solicitud y te vamos a contactar.';
+        });
+
+      document.getElementById('arrCode').textContent = codigo;
+      this.style.display = 'none';
+      document.getElementById('arrSuccess').style.display = 'block';
+      document.getElementById('arrCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      console.error('[Lad Flooring] Error enviando la solicitud de arrepentimiento:', err);
+      errorBox.innerHTML = `No pudimos enviar tu solicitud. Probá de nuevo en unos minutos o escribinos a <a href="mailto:info@ladflooring.com" style="color:inherit;text-decoration:underline;">info@ladflooring.com</a> o por <a href="${LAD_WHATSAPP_URL}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">WhatsApp</a>.`;
+      errorBox.style.display = 'block';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Enviar solicitud de arrepentimiento';
+    }
+  });
+</script>
+</body>
+</html>

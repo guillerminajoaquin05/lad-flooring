@@ -7,7 +7,7 @@
 <title>Panel de Administración — Lad Flooring</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="assets/img/logo-mark.svg">
-<link rel="stylesheet" href="css/style.css?v=20261117">
+<link rel="stylesheet" href="css/style.css?v=20261117b">
 <style>
   .admin-table-wrap { border-radius: var(--radius); overflow:hidden; box-shadow: var(--shadow-card); border:1px solid var(--border); }
   .admin-table { width:100%; border-collapse:collapse; background:var(--white); }
@@ -44,6 +44,7 @@
     <div class="tag-filters" id="adminTabs" style="margin-bottom:24px;">
       <button data-tab="pedidos" class="active">Pedidos</button>
       <button data-tab="cotizaciones">Cotizaciones <span id="quotesNewCount"></span></button>
+      <button data-tab="arrepentimientos">Arrepentimientos <span id="arrNewCount"></span></button>
       <button data-tab="productos">Productos</button>
       <button data-tab="servicios">Servicios</button>
       <button data-tab="trabajos">Trabajos</button>
@@ -92,6 +93,28 @@
             </tr>
           </thead>
           <tbody id="adminQuotesTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tabAdminArrepentimientos" style="display:none;">
+      <div class="flex-between" style="margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+        <h3 class="mt-0">Solicitudes de arrepentimiento <span style="font-size:0.8rem;color:#8199a3;">(Botón de arrepentimiento)</span></h3>
+      </div>
+      <p style="font-size:0.85rem;color:#5C7784;margin-top:-6px;">Al cliente ya le llegó la constancia con el código. Contactalo para coordinar la devolución y el reintegro.</p>
+      <div class="admin-table-wrap" style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Código</th>
+              <th>Cliente</th>
+              <th>Pedido</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="adminArrTbody"></tbody>
         </table>
       </div>
     </div>
@@ -436,6 +459,17 @@
   </div>
 </div>
 
+<!-- Modal: detalle de una solicitud de arrepentimiento -->
+<div class="modal-overlay" id="arrModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('arrModal')">✕</button>
+    <h3 id="arrModalTitle" style="margin-bottom:4px;"></h3>
+    <p id="arrModalMeta" style="font-size:0.82rem;color:#8199a3;margin-top:0;"></p>
+    <div class="divider"></div>
+    <div id="arrModalBody"></div>
+  </div>
+</div>
+
 <!-- Modal: detalle de un pedido de cotización -->
 <div class="modal-overlay" id="quoteModal">
   <div class="modal-box">
@@ -509,7 +543,7 @@
 <script src="js/faqs.js"></script>
 <script src="js/cart.js"></script>
 <script src="js/auth.js"></script>
-<script src="js/common.js?v=20261117"></script>
+<script src="js/common.js?v=20261117b"></script>
 <script>
   function ladSlugify(text) {
     return text.toLowerCase()
@@ -887,6 +921,7 @@
       btn.classList.add('active');
       document.getElementById('tabAdminPedidos').style.display = btn.dataset.tab === 'pedidos' ? 'block' : 'none';
       document.getElementById('tabAdminCotizaciones').style.display = btn.dataset.tab === 'cotizaciones' ? 'block' : 'none';
+      document.getElementById('tabAdminArrepentimientos').style.display = btn.dataset.tab === 'arrepentimientos' ? 'block' : 'none';
       document.getElementById('tabAdminProductos').style.display = btn.dataset.tab === 'productos' ? 'block' : 'none';
       document.getElementById('tabAdminServicios').style.display = btn.dataset.tab === 'servicios' ? 'block' : 'none';
       document.getElementById('tabAdminTrabajos').style.display = btn.dataset.tab === 'trabajos' ? 'block' : 'none';
@@ -1439,6 +1474,78 @@
     await loadAdminQuotes();
   }
 
+  // ---------- Arrepentimientos (Botón de arrepentimiento) ----------
+  const ARR_STATUS_LABELS = { nuevo: 'Nuevo', en_proceso: 'En proceso', resuelto: 'Resuelto' };
+  let adminArr = [];
+
+  async function loadAdminArrepentimientos() {
+    const { data, error } = await ladSupabase
+      .from('arrepentimientos')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) {
+      document.getElementById('adminArrTbody').innerHTML = `<tr><td colspan="6" style="color:#A94442;">No pudimos cargar las solicitudes: ${ladEscape(error.message)}. ¿Ya corriste supabase/arrepentimientos.sql en Supabase?</td></tr>`;
+      return;
+    }
+    adminArr = data;
+    renderAdminArrTable();
+  }
+
+  function renderAdminArrTable() {
+    const nuevos = adminArr.filter(a => a.status === 'nuevo').length;
+    document.getElementById('arrNewCount').textContent = nuevos ? `(${nuevos})` : '';
+    document.getElementById('adminArrTbody').innerHTML = adminArr.length ? adminArr.map(a => `
+      <tr>
+        <td>${new Date(a.created_at).toLocaleDateString('es-AR')}</td>
+        <td><strong>${ladEscape(a.codigo)}</strong></td>
+        <td><strong>${ladEscape(a.nombre)}</strong><div style="font-size:0.78rem;color:#8199a3;">${ladEscape(a.email)}</div></td>
+        <td>${a.pedido ? ladEscape(a.pedido) : '—'}</td>
+        <td>
+          <select onchange="setArrStatus('${a.id}', this.value)" style="font-size:0.82rem;padding:4px 6px;border-radius:var(--radius-sm);border:1px solid var(--border);">
+            ${Object.entries(ARR_STATUS_LABELS).map(([v, l]) => `<option value="${v}" ${a.status === v ? 'selected' : ''}>${l}</option>`).join('')}
+          </select>
+        </td>
+        <td>
+          <div class="row-actions">
+            <button onclick="viewArr('${a.id}')">Ver</button>
+            <button onclick="deleteArr('${a.id}')" style="color:#A94442;">Eliminar</button>
+          </div>
+        </td>
+      </tr>
+    `).join('') : '<tr><td colspan="6" style="color:#8199a3;">Todavía no llegó ninguna solicitud de arrepentimiento.</td></tr>';
+  }
+
+  function viewArr(id) {
+    const a = adminArr.find(x => x.id === id);
+    document.getElementById('arrModalTitle').textContent = `${a.nombre} — ${a.codigo}`;
+    document.getElementById('arrModalMeta').textContent = 'Recibida el ' + new Date(a.created_at).toLocaleString('es-AR')
+      + (a.notified_at ? ' · Constancia enviada por email' : ' · La constancia por email no salió: mandásela vos con el código');
+    const row = (label, value) => `<div class="buyer-row"><span style="color:#8199a3;">${label}</span><span style="text-align:right;">${value}</span></div>`;
+    const whatsapp = a.telefono ? 'https://wa.me/' + a.telefono.replace(/\D/g, '').replace(/^0/, '').replace(/^(?!54)/, '549') : '';
+    document.getElementById('arrModalBody').innerHTML = `
+      ${row('Email', `<a href="mailto:${ladEscape(a.email)}" style="color:var(--gold);">${ladEscape(a.email)}</a>`)}
+      ${a.telefono ? row('Teléfono', `${ladEscape(a.telefono)} · <a href="${whatsapp}" target="_blank" rel="noopener" style="color:var(--gold);">WhatsApp</a>`) : ''}
+      ${row('Pedido', a.pedido ? ladEscape(a.pedido) : 'No lo indicó')}
+      ${a.productos ? `<h4 style="margin-top:20px;">Productos</h4><p style="white-space:pre-line;">${ladEscape(a.productos)}</p>` : ''}
+      ${a.motivo ? `<h4 style="margin-top:20px;">Motivo</h4><p style="white-space:pre-line;">${ladEscape(a.motivo)}</p>` : ''}
+    `;
+    openModal('arrModal');
+  }
+
+  async function setArrStatus(id, status) {
+    const { error } = await ladSupabase.from('arrepentimientos').update({ status }).eq('id', id);
+    if (error) { alert('No pudimos actualizar el estado: ' + error.message); return; }
+    adminArr.find(x => x.id === id).status = status;
+    renderAdminArrTable();
+  }
+
+  async function deleteArr(id) {
+    if (!confirm('¿Eliminar esta solicitud de arrepentimiento? Esta acción no se puede deshacer.')) return;
+    const { error } = await ladSupabase.from('arrepentimientos').delete().eq('id', id);
+    if (error) { alert('No pudimos eliminar la solicitud: ' + error.message); return; }
+    await loadAdminArrepentimientos();
+  }
+
   // ---------- Trabajos Destacados ----------
   let adminProjects = [];
   let projectImages = []; // fotos del trabajo abierto en el modal; la primera es la portada
@@ -1843,6 +1950,7 @@
     loadAdminProducts();
     loadAdminServices();
     loadAdminQuotes();
+    loadAdminArrepentimientos();
     loadBankSettings();
     loadAdminProjects();
     loadAdminFaqs();

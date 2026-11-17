@@ -782,6 +782,11 @@ img { max-width: 100%; display: block; }
 .footer-bottom a { display: inline; margin: 0; font-size: inherit; }
 .footer-legal { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 16px; margin-top: 8px; }
 .footer-legal a { text-decoration: underline; text-underline-offset: 2px; }
+.footer-legal .footer-arrepentimiento {
+  text-decoration: none; color: var(--cream); border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 30px; padding: 6px 14px; font-size: 0.82rem;
+}
+.footer-legal .footer-arrepentimiento:hover { border-color: var(--gold); color: var(--gold); }
 .footer-legal .footer-data-fiscal { display: inline-block; text-decoration: none; line-height: 0; }
 .footer-legal .footer-data-fiscal img { width: 44px; height: auto; border-radius: 3px; }
 .site-footer p { color: var(--powder-blue); }
