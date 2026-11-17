@@ -16,7 +16,7 @@ const LAD_WHATSAPP_URL = 'https://wa.me/5491126371921';
 
 /* Data Fiscal de ARCA (ex AFIP): pegar acá el link que da el formulario 960/D, el del href del código
    que entrega ARCA (empieza con http://qr.afip.gob.ar/?qr=...). Mientras esté vacío, el QR no se muestra. */
-const LAD_DATA_FISCAL_URL = '';
+const LAD_DATA_FISCAL_URL = 'http://qr.afip.gob.ar/?qr=l8BgQGUobej_1Sv_am90GA,,';
 
 const NAV_LINKS = [
   { href: 'servicios.html', label: 'Servicios', key: 'servicios' },
