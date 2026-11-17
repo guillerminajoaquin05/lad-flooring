@@ -96,7 +96,7 @@
       <p style="white-space:pre-line;">${product.description}</p>
       ${variantsHTML}
       <p style="font-size:0.88rem;color:${product.stock > 0 ? '#3d8a5c' : '#A94442'};">
-        ${product.stock > 0 ? `✓ Stock disponible (${product.stock} unidades)` : '✕ Sin stock'}
+        ${product.stock > 0 ? '✓ Disponible' : '✕ No disponible por el momento'}
       </p>
       <div class="flex" style="align-items:center;gap:16px;margin:24px 0;">
         <div class="qty-box">
@@ -104,7 +104,7 @@
           <input id="qtyInput" type="number" value="1" min="1">
           <button id="qtyPlus">+</button>
         </div>
-        <button id="addToCartBtn" class="btn btn-primary" ${product.stock === 0 ? 'disabled' : ''}>Agregar al carrito</button>
+        <button id="addToCartBtn" class="btn btn-primary" ${product.stock > 0 ? '' : 'disabled'}>Agregar al carrito</button>
       </div>
       <div class="divider"></div>
       <p style="font-size:0.85rem;color:#8199a3;">Envíos a todo el país. Consultá el costo de envío en el carrito según tu provincia.</p>`}
@@ -180,7 +180,7 @@
             : `<span class="price">${ladFormatPrice(p.price)}</span>
           ${p.stock > 0
             ? `<button class="btn btn-primary btn-sm" onclick="ladAddToCart('${p.id}')">Agregar</button>`
-            : `<button class="btn btn-primary btn-sm" disabled>Sin stock</button>`}`}
+            : `<button class="btn btn-primary btn-sm" disabled>No disponible</button>`}`}
         </div>
       </div>
     `).join('');

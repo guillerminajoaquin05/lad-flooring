@@ -7,7 +7,7 @@
 <title>Panel de Administración — Lad Flooring</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="assets/img/logo-mark.svg">
-<link rel="stylesheet" href="css/style.css?v=20260928">
+<link rel="stylesheet" href="css/style.css?v=20261117">
 <style>
   .admin-table-wrap { border-radius: var(--radius); overflow:hidden; box-shadow: var(--shadow-card); border:1px solid var(--border); }
   .admin-table { width:100%; border-collapse:collapse; background:var(--white); }
@@ -109,7 +109,7 @@
               <th>Producto</th>
               <th>Línea</th>
               <th>Precio</th>
-              <th>Stock</th>
+              <th>Disponible</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
@@ -296,7 +296,9 @@
       </div>
       <div class="grid grid-2" style="gap:16px;">
         <div class="field"><label id="pPriceLabel">Precio</label><input type="number" id="pPrice" required></div>
-        <div class="field"><label>Stock</label><input type="number" id="pStock" required></div>
+        <div class="field"><label>Disponibilidad</label>
+          <select id="pAvailable"><option value="si">Disponible</option><option value="no">No disponible</option></select>
+        </div>
       </div>
       <div class="grid grid-2" style="gap:16px;">
         <div class="field">
@@ -316,7 +318,7 @@
       <div class="field">
         <label>Opciones a elegir (opcional, un punto por línea)</label>
         <textarea id="pVariantOptions" rows="3" placeholder="Un ítem por renglón, ej:&#10;Madera&#10;Vinílico / Cerámica&#10;Aceitado/Encerado"></textarea>
-        <p style="font-size:0.78rem;color:#8199a3;margin:6px 0 0;">Si cargás opciones, en la ficha del producto aparecen como botones para elegir (mismo precio y stock para todas). Dejalo vacío si el producto no tiene variantes.</p>
+        <p style="font-size:0.78rem;color:#8199a3;margin:6px 0 0;">Si cargás opciones, en la ficha del producto aparecen como botones para elegir (mismo precio y disponibilidad para todas). Dejalo vacío si el producto no tiene variantes.</p>
       </div>
       <div class="field">
         <label>Imagen del producto</label>
@@ -507,7 +509,7 @@
 <script src="js/faqs.js"></script>
 <script src="js/cart.js"></script>
 <script src="js/auth.js"></script>
-<script src="js/common.js?v=20260928"></script>
+<script src="js/common.js?v=20261117"></script>
 <script>
   function ladSlugify(text) {
     return text.toLowerCase()
@@ -729,7 +731,7 @@
         <td>${p.name}</td>
         <td>${p.line === 'bona' ? 'Línea Bona' : 'Pisos Flotantes'}</td>
         <td>${ladIsConsultOnly(p) ? 'A consultar' : ladFormatPrice(p.price)}</td>
-        <td>${ladIsConsultOnly(p) ? '—' : p.stock}</td>
+        <td>${ladIsConsultOnly(p) ? '—' : (p.stock > 0 ? 'Sí' : '<span style="color:#A94442;">No</span>')}</td>
         <td><span class="status-dot ${p.hidden ? 'hidden-status' : ''}">${p.hidden ? 'Oculto' : 'Visible'}</span></td>
         <td>
           <div class="row-actions">
@@ -743,11 +745,14 @@
     `).join('');
   }
 
+  /* No se maneja stock: se compra al proveedor por pedido. La columna stock queda como
+     disponible (número alto, que el servidor nunca llega a agotar) o no disponible (0). */
+  const LAD_AVAILABLE_STOCK = 9999;
+
   /* Los pisos se venden por consulta: en el sitio no se muestra precio, así que no es obligatorio cargarlo. */
   function syncProductPriceField() {
     const consultOnly = ladIsConsultOnly({ line: document.getElementById('pLine').value });
     document.getElementById('pPrice').required = !consultOnly;
-    document.getElementById('pStock').required = !consultOnly;
     document.getElementById('pPriceLabel').textContent = consultOnly ? 'Precio (opcional, no se muestra: los pisos se consultan por WhatsApp)' : 'Precio';
   }
   document.getElementById('pLine').addEventListener('change', syncProductPriceField);
@@ -773,7 +778,7 @@
     document.getElementById('pName').value = p.name;
     document.getElementById('pLine').value = p.line;
     document.getElementById('pPrice').value = p.price;
-    document.getElementById('pStock').value = p.stock;
+    document.getElementById('pAvailable').value = p.stock > 0 ? 'si' : 'no';
     document.getElementById('pVariantOptions').value = (p.variantOptions || []).join('\n');
     document.getElementById('pUsageTier').value = p.usageTier || '';
     document.getElementById('pFamily').value = p.family || '';
@@ -839,7 +844,7 @@
       line: document.getElementById('pLine').value,
       category: 'General',
       price: parseFloat(document.getElementById('pPrice').value) || 0,
-      stock: parseInt(document.getElementById('pStock').value) || 0,
+      stock: document.getElementById('pAvailable').value === 'si' ? LAD_AVAILABLE_STOCK : 0,
       variant_options: document.getElementById('pVariantOptions').value.trim() || null,
       usage_tier: document.getElementById('pUsageTier').value || null,
       family: document.getElementById('pFamily').value.trim() || null,

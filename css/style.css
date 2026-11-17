@@ -605,6 +605,14 @@ img { max-width: 100%; display: block; }
   border-color: var(--steel-blue);
   background: var(--white);
 }
+.password-wrap { position: relative; }
+.field .password-wrap input { padding-right: 46px; }
+.password-toggle {
+  position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  border: none; background: none; color: #5C7784; cursor: pointer; border-radius: var(--radius-sm);
+}
+.password-toggle:hover { color: var(--navy); }
 .checkbox-row { display: flex; align-items: flex-start; gap: 10px; font-size: 0.88rem; color: #3C5763; }
 .checkbox-row input { margin-top: 3px; }
 .form-foot { text-align: center; margin-top: var(--space-3); font-size: 0.9rem; color: #5C7784; }
@@ -772,6 +780,10 @@ img { max-width: 100%; display: block; }
   color: #7E97A0;
 }
 .footer-bottom a { display: inline; margin: 0; font-size: inherit; }
+.footer-legal { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 16px; margin-top: 8px; }
+.footer-legal a { text-decoration: underline; text-underline-offset: 2px; }
+.footer-legal .footer-data-fiscal { display: inline-block; text-decoration: none; line-height: 0; }
+.footer-legal .footer-data-fiscal img { width: 44px; height: auto; border-radius: 3px; }
 .site-footer p { color: var(--powder-blue); }
 .newsletter-form { display: flex; gap: 8px; margin-top: var(--space-1); }
 .newsletter-form input {
