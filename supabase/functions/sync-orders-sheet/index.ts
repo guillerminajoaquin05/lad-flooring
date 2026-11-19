@@ -42,69 +42,79 @@ async function sendToSheet(payload: Record<string, unknown>) {
   if (!res.ok || text.trim() !== 'ok') throw new Error(`La planilla respondió ${res.status}: ${text.slice(0, 200)}`);
 }
 
-Deno.serve(async (req) => {
-  try {
-    if (!SHEETS_WEBHOOK_URL || !SHEETS_SECRET) return json({ error: 'Faltan SHEETS_WEBHOOK_URL o SHEETS_SECRET' }, 500);
-    if (req.headers.get('x-sync-secret') !== SHEETS_SECRET) return json({ error: 'No autorizado' }, 401);
-
-    const { type, record, old_record } = await req.json();
-
-    if (type === 'DELETE') {
-      if (old_record?.id == null) return json({ ok: true, skipped: 'sin id' });
-      await sendToSheet({ action: 'delete', id: String(old_record.id) });
-      return json({ ok: true, deleted: old_record.id });
-    }
-
-    if (!record?.id) return json({ ok: true, skipped: 'sin registro' });
-    if (type === 'UPDATE' && old_record && RELEVANT_FIELDS.every((f) => String(record[f] ?? '') === String(old_record[f] ?? ''))) {
-      return json({ ok: true, skipped: 'sin cambios relevantes' });
-    }
-
-    // En un pedido nuevo, los productos se guardan un instante después que el pedido: esperamos un poco
-    if (type === 'INSERT') await new Promise((r) => setTimeout(r, 3000));
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const { data: order, error } = await supabase
-      .from('orders')
-      .select('*, order_items(qty, unit_price, variant, products(name))')
-      .eq('id', record.id)
-      .maybeSingle();
-    if (error) throw error;
-    if (!order) return json({ ok: true, skipped: 'el pedido ya no existe' });
-
-    const productos = (order.order_items || [])
-      .map((i: any) => `${i.qty} × ${i.products?.name || 'Producto'}${i.variant ? ` (${i.variant})` : ''}`)
-      .join('; ');
-
-    await sendToSheet({
-      action: 'upsert',
-      row: {
-        'Pedido': String(order.id),
-        'Fecha': new Date(order.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }),
-        'Cliente': `${order.nombre || ''} ${order.apellido || ''}`.trim(),
-        'Email': order.email || '',
-        'Teléfono': order.telefono || '',
-        'Dirección': [order.direccion, order.depto].filter(Boolean).join(' '),
-        'Localidad': order.localidad || '',
-        'Provincia': order.provincia || '',
-        'Código postal': order.codigo_postal || '',
-        'Productos': productos,
-        'Subtotal': Number(order.subtotal) || 0,
-        'Envío': Number(order.shipping_cost) || 0,
-        'Tipo de envío': order.shipping_zone || '',
-        'Total': Number(order.total) || 0,
-        'Medio de pago': PAYMENT_METHOD[order.payment_method] || order.payment_method || '',
-        'Estado del pago': PAYMENT_STATUS[order.payment_status] || order.payment_status || '',
-        'Estado del envío': ORDER_STATUS[order.order_status] || order.order_status || '',
-        'Empresa de envío': order.shipping_carrier || '',
-        'N° de seguimiento': order.tracking_number || '',
-        'Notas': order.notas || '',
-        'Actualizado': new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }),
-      },
-    });
-    return json({ ok: true, synced: order.id });
-  } catch (err) {
-    console.error(err);
-    return json({ error: err.message }, 500);
+// Procesa un evento del Database Webhook. Devuelve qué hizo (para los logs).
+async function processEvent({ type, record, old_record }: any) {
+  if (type === 'DELETE') {
+    if (old_record?.id == null) return { skipped: 'sin id' };
+    await sendToSheet({ action: 'delete', id: String(old_record.id) });
+    return { deleted: old_record.id };
   }
+
+  if (!record?.id) return { skipped: 'sin registro' };
+  if (type === 'UPDATE' && old_record && RELEVANT_FIELDS.every((f) => String(record[f] ?? '') === String(old_record[f] ?? ''))) {
+    return { skipped: 'sin cambios relevantes' };
+  }
+
+  // En un pedido nuevo, los productos se guardan un instante después que el pedido: esperamos un poco
+  if (type === 'INSERT') await new Promise((r) => setTimeout(r, 3000));
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const { data: order, error } = await supabase
+    .from('orders')
+    .select('*, order_items(qty, unit_price, variant, products(name))')
+    .eq('id', record.id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!order) return { skipped: 'el pedido ya no existe' };
+
+  const productos = (order.order_items || [])
+    .map((i: any) => `${i.qty} × ${i.products?.name || 'Producto'}${i.variant ? ` (${i.variant})` : ''}`)
+    .join('; ');
+
+  await sendToSheet({
+    action: 'upsert',
+    row: {
+      'Pedido': String(order.id),
+      'Fecha': new Date(order.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }),
+      'Cliente': `${order.nombre || ''} ${order.apellido || ''}`.trim(),
+      'Email': order.email || '',
+      'Teléfono': order.telefono || '',
+      'Dirección': [order.direccion, order.depto].filter(Boolean).join(' '),
+      'Localidad': order.localidad || '',
+      'Provincia': order.provincia || '',
+      'Código postal': order.codigo_postal || '',
+      'Productos': productos,
+      'Subtotal': Number(order.subtotal) || 0,
+      'Envío': Number(order.shipping_cost) || 0,
+      'Tipo de envío': order.shipping_zone || '',
+      'Total': Number(order.total) || 0,
+      'Medio de pago': PAYMENT_METHOD[order.payment_method] || order.payment_method || '',
+      'Estado del pago': PAYMENT_STATUS[order.payment_status] || order.payment_status || '',
+      'Estado del envío': ORDER_STATUS[order.order_status] || order.order_status || '',
+      'Empresa de envío': order.shipping_carrier || '',
+      'N° de seguimiento': order.tracking_number || '',
+      'Notas': order.notas || '',
+      'Actualizado': new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }),
+    },
+  });
+  return { synced: order.id };
+}
+
+Deno.serve(async (req) => {
+  if (!SHEETS_WEBHOOK_URL || !SHEETS_SECRET) return json({ error: 'Faltan SHEETS_WEBHOOK_URL o SHEETS_SECRET' }, 500);
+  if (req.headers.get('x-sync-secret') !== SHEETS_SECRET) return json({ error: 'No autorizado' }, 401);
+  const event = await req.json().catch(() => null);
+  if (!event) return json({ error: 'JSON inválido' }, 400);
+
+  // El Database Webhook corta si la respuesta tarda: contestamos enseguida y escribimos la planilla de fondo
+  const work = processEvent(event)
+    .then((result) => console.log('sync-orders-sheet', JSON.stringify(result)))
+    .catch((err) => console.error('sync-orders-sheet error:', err));
+  const runtime = (globalThis as any).EdgeRuntime;
+  if (runtime?.waitUntil) {
+    runtime.waitUntil(work);
+    return json({ ok: true, queued: true });
+  }
+  await work;
+  return json({ ok: true });
 });
