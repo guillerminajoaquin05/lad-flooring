@@ -1,8 +1,12 @@
+# Supabase pausa los proyectos gratuitos que pasan 7 días sin actividad.
+# Leer no alcanzó: ahora, todos los días, escribe en la base (lad_keepalive, ver supabase/keepalive.sql),
+# consulta un producto y el servicio de cuentas. Si el proyecto llega a pausarse igual, la tarea falla
+# (en rojo) y GitHub manda un mail: es la señal para reactivarlo desde el panel de Supabase.
 name: Mantener Supabase activo
 
 on:
   schedule:
-    - cron: '0 12 */3 * *'
+    - cron: '17 11 * * *'
   workflow_dispatch:
 
 jobs:
@@ -13,11 +17,14 @@ jobs:
         with:
           sparse-checkout: js/supabase-config.js
           sparse-checkout-cone-mode: false
-      - name: Consultar la base
+      - name: Escribir y consultar la base
         run: |
           KEY="$(grep -oE 'sb_publishable_[A-Za-z0-9_-]+' js/supabase-config.js | head -1)"
-          code=$(curl -s -o /dev/null -w "%{http_code}" \
-            "https://pdogvswdhqioarkpppua.supabase.co/rest/v1/products?select=id&limit=1" \
+          BASE="https://pdogvswdhqioarkpppua.supabase.co"
+          write=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE/rest/v1/rpc/lad_keepalive" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d '{}')
+          read=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/rest/v1/products?select=id&limit=1" \
             -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
-          echo "Respuesta de Supabase: $code"
-          test "$code" = "200"
+          auth=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/auth/v1/health" -H "apikey: $KEY")
+          echo "Escritura: $write · Lectura: $read · Cuentas: $auth"
+          test "$write" = "200" && test "$read" = "200"
