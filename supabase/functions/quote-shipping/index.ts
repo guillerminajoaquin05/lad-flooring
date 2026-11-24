@@ -3,7 +3,8 @@
 // (para mostrarlo) y create-order / create-mp-preference (para cobrarlo).
 //
 // - Si están cargadas las credenciales de Correo Argentino (MiCorreo) y el código postal de origen,
-//   cotiza en vivo un envío a domicilio (API MiCorreo, POST /rates) y le suma el recargo configurado.
+//   cotiza en vivo un envío a domicilio (API MiCorreo: POST /rates/packages, o /rates si esa no responde)
+//   y le suma el recargo configurado.
 // - Si no, o si Correo no responde, usa la tarifa fija por zona según la provincia.
 //
 // Secretos (Supabase → Edge Functions → Secrets), cuando Correo entregue las credenciales:
@@ -49,9 +50,12 @@ const PROVINCE_ZONES: Record<string, string> = {
 
 // Producto sin peso/medidas cargados: lo tratamos como una caja de 1 kg de 10 x 10 x 10 cm
 const DEFAULT_PACKAGE = { weight: 1000, length: 10, width: 10, height: 10 };
-// Límites de la cotización de MiCorreo
-const MAX_WEIGHT_G = 25000;
-const MAX_SIDE_CM = 150;
+// Límites de la cotización de MiCorreo (manual de mayo 2026)
+const MAX_WEIGHT_G = 50000;
+const MAX_SIDE_CM = 200;
+const MAX_SIDES_SUM_CM = 300;
+
+type Dim = { quantity: number; weight: number; height: number; width: number; length: number };
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -96,25 +100,47 @@ async function correoCustomerId(token: string) {
   return cachedCustomerId!;
 }
 
-async function correoHomeRate(originCp: string, destCp: string, pkg: typeof DEFAULT_PACKAGE) {
-  const token = await correoToken();
-  const customerId = await correoCustomerId(token);
-  const res = await fetch(`${CORREO_BASE}/rates`, {
+async function postRates(path: string, token: string, body: unknown) {
+  const res = await fetch(`${CORREO_BASE}${path}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      customerId,
-      postalCodeOrigin: originCp,
-      postalCodeDestination: destCp,
-      deliveredType: 'D',
-      dimensions: pkg,
-    }),
+    body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`Correo /rates ${res.status}: ${await res.text()}`);
+  if (!res.ok) throw new Error(`Correo ${path} ${res.status}: ${await res.text()}`);
   const rates = ((await res.json()).rates || []).filter((r: any) => r.deliveredType === 'D' && Number(r.price) > 0);
-  if (!rates.length) throw new Error('Correo no devolvió tarifas a domicilio');
-  // La más barata (normalmente "Paq.ar Clásico")
+  if (!rates.length) throw new Error(`Correo ${path} no devolvió tarifas a domicilio`);
+  // La más barata (normalmente "Correo Argentino Clasico")
   return rates.sort((a: any, b: any) => Number(a.price) - Number(b.price))[0];
+}
+
+// Arma un solo paquete a mano: suma de pesos, el largo y el ancho del producto más grande y las alturas apiladas
+function stackByHand(dims: Dim[]) {
+  const pkg = { weight: 0, length: 0, width: 0, height: 0 };
+  for (const d of dims) {
+    pkg.weight += d.weight * d.quantity;
+    pkg.length = Math.max(pkg.length, d.length);
+    pkg.width = Math.max(pkg.width, d.width);
+    pkg.height += d.height * d.quantity;
+  }
+  return pkg;
+}
+
+async function correoHomeRate(originCp: string, destCp: string, dims: Dim[]) {
+  const token = await correoToken();
+  const customerId = await correoCustomerId(token);
+  const base = { customerId, postalCodeOrigin: originCp, postalCodeDestination: destCp, deliveredType: 'D' };
+  try {
+    // Correo apila los productos y cotiza el paquete resultante (/rates/packages, manual 2026)
+    return await postRates('/rates/packages', token, { ...base, dimensions: dims });
+  } catch (e) {
+    // Si esa opción no está habilitada para la cuenta, apilamos nosotros y usamos /rates
+    console.warn('No se pudo cotizar con /rates/packages, pruebo con /rates:', e);
+    const pkg = stackByHand(dims);
+    if (pkg.height > MAX_SIDE_CM || pkg.length + pkg.width + pkg.height > MAX_SIDES_SUM_CM) {
+      throw new Error('El paquete armado a mano supera las medidas máximas');
+    }
+    return await postRates('/rates', token, { ...base, dimensions: pkg });
+  }
 }
 
 Deno.serve(async (req) => {
@@ -139,37 +165,34 @@ Deno.serve(async (req) => {
     const destCp = normalizePostalCode(postalCode);
     if (!originCp || !destCp || !Array.isArray(items) || !items.length) return json(fixed);
 
-    // Armamos un solo paquete: suma de pesos, el largo y el ancho del producto más grande,
-    // y las alturas apiladas (criterio de los plugins de MiCorreo).
+    // Peso y medidas de cada producto (los que no los tienen cargados usan la caja por defecto)
     const ids = [...new Set(items.map((i: any) => i.id))];
     const { data: products } = await supabase
       .from('products')
       .select('id, weight_g, length_cm, width_cm, height_cm')
       .in('id', ids);
     const byId = new Map((products || []).map((p: any) => [p.id, p]));
-    const pkg = { weight: 0, length: 0, width: 0, height: 0 };
-    for (const i of items) {
-      const qty = Math.max(1, parseInt(i.qty) || 1);
+    const dims: Dim[] = items.map((i: any) => {
       const p: any = byId.get(i.id) || {};
-      const w = p.weight_g || DEFAULT_PACKAGE.weight;
-      const l = p.length_cm || DEFAULT_PACKAGE.length;
-      const wd = p.width_cm || DEFAULT_PACKAGE.width;
-      const h = p.height_cm || DEFAULT_PACKAGE.height;
-      pkg.weight += w * qty;
-      pkg.length = Math.max(pkg.length, l);
-      pkg.width = Math.max(pkg.width, wd);
-      pkg.height += h * qty;
-    }
-    pkg.height = Math.min(pkg.height, MAX_SIDE_CM);
-    // Demasiado grande o pesado para una sola cotización: tarifa fija (se coordina aparte)
-    if (pkg.weight > MAX_WEIGHT_G || pkg.length > MAX_SIDE_CM || pkg.width > MAX_SIDE_CM) return json(fixed);
+      return {
+        quantity: Math.max(1, parseInt(i.qty) || 1),
+        weight: p.weight_g || DEFAULT_PACKAGE.weight,
+        height: p.height_cm || DEFAULT_PACKAGE.height,
+        width: p.width_cm || DEFAULT_PACKAGE.width,
+        length: p.length_cm || DEFAULT_PACKAGE.length,
+      };
+    });
+    // Demasiado pesado o algún producto más grande que lo que cotiza Correo: tarifa fija (se coordina aparte)
+    const totalWeight = dims.reduce((s, d) => s + d.weight * d.quantity, 0);
+    if (totalWeight > MAX_WEIGHT_G || dims.some((d) => Math.max(d.height, d.width, d.length) > MAX_SIDE_CM)) return json(fixed);
 
     try {
-      const rate = await correoHomeRate(originCp, destCp, pkg);
+      const rate = await correoHomeRate(originCp, destCp, dims);
+      const name = String(rate.productName || 'envío');
       return json({
         source: 'correo',
         price: Math.ceil(Number(rate.price) + recargo),
-        label: `Correo Argentino — ${rate.productName || 'envío'} a domicilio`,
+        label: (/^correo argentino/i.test(name) ? name : `Correo Argentino — ${name}`) + ' a domicilio',
         deliveryTimeMin: rate.deliveryTimeMin || null,
         deliveryTimeMax: rate.deliveryTimeMax || null,
       });
