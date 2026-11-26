@@ -2,35 +2,32 @@
 // Calcula el costo de envío de un carrito. Es la única fuente de verdad del envío: la usan el checkout
 // (para mostrarlo) y create-order / create-mp-preference (para cobrarlo).
 //
-// - Si están cargadas las credenciales de Correo Argentino (MiCorreo) y el código postal de origen,
-//   cotiza en vivo un envío a domicilio (API MiCorreo: POST /rates/packages, o /rates si esa no responde)
-//   y le suma el recargo configurado.
-// - Si no, o si Correo no responde, usa la tarifa fija por zona según la provincia.
+// - Si está configurada la cuenta de Andreani, cotiza en vivo un envío a domicilio y le suma el recargo
+//   configurado en el admin.
+// - Si no, o si Andreani no responde, usa la tarifa fija por zona según la provincia.
 //
-// Secretos (Supabase → Edge Functions → Secrets), cuando Correo entregue las credenciales:
-//   CORREO_API_USER, CORREO_API_PASSWORD  usuario y clave de la API (los da Correo, distintos para test y producción)
-//   CORREO_CUSTOMER_ID                    id de cliente de MiCorreo; si no se carga, se obtiene con
-//   CORREO_EMAIL, CORREO_PASSWORD         el email y la contraseña de la cuenta MiCorreo
-//   CORREO_ENV                            "test" para el ambiente de prueba; vacío = producción
+// Secretos (Supabase → Edge Functions → Secrets). El cotizador de Andreani es público: no hace falta clave de API.
+//   ANDREANI_CLIENTE, ANDREANI_CONTRATO   número de cliente y de contrato de la cuenta de Andreani
+//   ANDREANI_SUCURSAL                     opcional: sucursal de origen, si el contrato la pide
+//
+// Correo Argentino (API MiCorreo) estuvo integrado y se sacó a pedido mientras no lleguen sus credenciales.
+// Para volver a sumarlo como segunda opción, el código está en el historial de git (commit b2176b0).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
-const CORREO_API_USER = Deno.env.get('CORREO_API_USER') || '';
-const CORREO_API_PASSWORD = Deno.env.get('CORREO_API_PASSWORD') || '';
-const CORREO_EMAIL = Deno.env.get('CORREO_EMAIL') || '';
-const CORREO_PASSWORD = Deno.env.get('CORREO_PASSWORD') || '';
-const CORREO_BASE = Deno.env.get('CORREO_ENV') === 'test'
-  ? 'https://apitest.correoargentino.com.ar/micorreo/v1'
-  : 'https://api.correoargentino.com.ar/micorreo/v1';
+const ANDREANI_CLIENTE = Deno.env.get('ANDREANI_CLIENTE') || '';
+const ANDREANI_CONTRATO = Deno.env.get('ANDREANI_CONTRATO') || '';
+const ANDREANI_SUCURSAL = Deno.env.get('ANDREANI_SUCURSAL') || '';
+const ANDREANI_BASE = 'https://apis.andreani.com';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-/* Tarifa fija por zona: se usa mientras no esté conectado Correo Argentino, o si no responde */
+/* Tarifa fija por zona: se usa mientras no esté conectado Andreani, o si no responde */
 const SHIPPING_ZONES: Record<string, { label: string; price: number }> = {
   caba: { label: 'Envío CABA', price: 4500 },
   gba: { label: 'Envío GBA', price: 6800 },
@@ -50,10 +47,9 @@ const PROVINCE_ZONES: Record<string, string> = {
 
 // Producto sin peso/medidas cargados: lo tratamos como una caja de 1 kg de 10 x 10 x 10 cm
 const DEFAULT_PACKAGE = { weight: 1000, length: 10, width: 10, height: 10 };
-// Límites de la cotización de MiCorreo (manual de mayo 2026)
+// Más que esto no se cotiza en vivo: se cobra la tarifa fija y el envío se coordina aparte
 const MAX_WEIGHT_G = 50000;
 const MAX_SIDE_CM = 200;
-const MAX_SIDES_SUM_CM = 300;
 
 type Dim = { quantity: number; weight: number; height: number; width: number; length: number };
 
@@ -70,77 +66,26 @@ function normalizePostalCode(cp: unknown) {
   return m ? m[0] : null;
 }
 
-/* Token y customerId de MiCorreo, guardados en memoria mientras la función siga activa */
-let cachedToken: { token: string; expiresAt: number } | null = null;
-let cachedCustomerId: string | null = Deno.env.get('CORREO_CUSTOMER_ID') || null;
-
-async function correoToken() {
-  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) return cachedToken.token;
-  const res = await fetch(`${CORREO_BASE}/token`, {
-    method: 'POST',
-    headers: { Authorization: 'Basic ' + btoa(`${CORREO_API_USER}:${CORREO_API_PASSWORD}`) },
+/* Cotizador de Andreani (GET /v1/tarifas): solo necesita el número de cliente y de contrato de la cuenta.
+   El origen sale del contrato. Volumen en cm³, peso en kilos y valor declarado en pesos. */
+async function andreaniHomeRate(destCp: string, dims: Dim[], declaredValue: number) {
+  const volume = dims.reduce((s, d) => s + d.length * d.width * d.height * d.quantity, 0);
+  const kilos = dims.reduce((s, d) => s + d.weight * d.quantity, 0) / 1000;
+  const params = new URLSearchParams({
+    cpDestino: destCp,
+    contrato: ANDREANI_CONTRATO,
+    cliente: ANDREANI_CLIENTE,
+    sucursalOrigen: ANDREANI_SUCURSAL,
+    'bultos[0][valorDeclarado]': String(Math.max(1, Math.round(declaredValue))),
+    'bultos[0][volumen]': String(Math.max(1, Math.round(volume))),
+    'bultos[0][kilos]': String(Math.max(0.01, Math.round(kilos * 100) / 100)),
   });
-  if (!res.ok) throw new Error(`Correo /token ${res.status}`);
+  const res = await fetch(`${ANDREANI_BASE}/v1/tarifas?${params}`);
+  if (!res.ok) throw new Error(`Andreani /v1/tarifas ${res.status}: ${await res.text()}`);
   const data = await res.json();
-  // "expires": "2022-04-26 21:16:20" (hora de Argentina). Si no se puede leer, lo renovamos en 30 minutos.
-  const parsed = Date.parse(String(data.expires || '').replace(' ', 'T') + '-03:00');
-  cachedToken = { token: data.token, expiresAt: Number.isFinite(parsed) ? parsed : Date.now() + 30 * 60_000 };
-  return cachedToken.token;
-}
-
-async function correoCustomerId(token: string) {
-  if (cachedCustomerId) return cachedCustomerId;
-  const res = await fetch(`${CORREO_BASE}/users/validate`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: CORREO_EMAIL, password: CORREO_PASSWORD }),
-  });
-  if (!res.ok) throw new Error(`Correo /users/validate ${res.status}`);
-  cachedCustomerId = (await res.json()).customerId;
-  return cachedCustomerId!;
-}
-
-async function postRates(path: string, token: string, body: unknown) {
-  const res = await fetch(`${CORREO_BASE}${path}`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`Correo ${path} ${res.status}: ${await res.text()}`);
-  const rates = ((await res.json()).rates || []).filter((r: any) => r.deliveredType === 'D' && Number(r.price) > 0);
-  if (!rates.length) throw new Error(`Correo ${path} no devolvió tarifas a domicilio`);
-  // La más barata (normalmente "Correo Argentino Clasico")
-  return rates.sort((a: any, b: any) => Number(a.price) - Number(b.price))[0];
-}
-
-// Arma un solo paquete a mano: suma de pesos, el largo y el ancho del producto más grande y las alturas apiladas
-function stackByHand(dims: Dim[]) {
-  const pkg = { weight: 0, length: 0, width: 0, height: 0 };
-  for (const d of dims) {
-    pkg.weight += d.weight * d.quantity;
-    pkg.length = Math.max(pkg.length, d.length);
-    pkg.width = Math.max(pkg.width, d.width);
-    pkg.height += d.height * d.quantity;
-  }
-  return pkg;
-}
-
-async function correoHomeRate(originCp: string, destCp: string, dims: Dim[]) {
-  const token = await correoToken();
-  const customerId = await correoCustomerId(token);
-  const base = { customerId, postalCodeOrigin: originCp, postalCodeDestination: destCp, deliveredType: 'D' };
-  try {
-    // Correo apila los productos y cotiza el paquete resultante (/rates/packages, manual 2026)
-    return await postRates('/rates/packages', token, { ...base, dimensions: dims });
-  } catch (e) {
-    // Si esa opción no está habilitada para la cuenta, apilamos nosotros y usamos /rates
-    console.warn('No se pudo cotizar con /rates/packages, pruebo con /rates:', e);
-    const pkg = stackByHand(dims);
-    if (pkg.height > MAX_SIDE_CM || pkg.length + pkg.width + pkg.height > MAX_SIDES_SUM_CM) {
-      throw new Error('El paquete armado a mano supera las medidas máximas');
-    }
-    return await postRates('/rates', token, { ...base, dimensions: pkg });
-  }
+  const price = parseFloat(data?.tarifaConIva?.total);
+  if (!(price > 0)) throw new Error('Andreani no devolvió una tarifa');
+  return price;
 }
 
 Deno.serve(async (req) => {
@@ -155,21 +100,19 @@ Deno.serve(async (req) => {
     if (!zoneKey) return json({ error: 'Provincia de envío inválida' }, 400);
     const fixed = { source: 'fixed', price: SHIPPING_ZONES[zoneKey].price, label: SHIPPING_ZONES[zoneKey].label };
 
-    const correoReady = CORREO_API_USER && CORREO_API_PASSWORD && (cachedCustomerId || (CORREO_EMAIL && CORREO_PASSWORD));
-    if (!correoReady) return json(fixed);
+    if (!ANDREANI_CLIENTE || !ANDREANI_CONTRATO) return json(fixed);
+    const destCp = normalizePostalCode(postalCode);
+    if (!destCp || !Array.isArray(items) || !items.length) return json(fixed);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const { data: setting } = await supabase.from('site_settings').select('value').eq('key', 'envios').maybeSingle();
-    const originCp = normalizePostalCode(setting?.value?.origen_cp);
     const recargo = Math.max(0, Number(setting?.value?.recargo) || 0);
-    const destCp = normalizePostalCode(postalCode);
-    if (!originCp || !destCp || !Array.isArray(items) || !items.length) return json(fixed);
 
-    // Peso y medidas de cada producto (los que no los tienen cargados usan la caja por defecto)
+    // Peso, medidas y precio de cada producto (los que no tienen peso/medidas usan la caja por defecto)
     const ids = [...new Set(items.map((i: any) => i.id))];
     const { data: products } = await supabase
       .from('products')
-      .select('id, weight_g, length_cm, width_cm, height_cm')
+      .select('id, price, weight_g, length_cm, width_cm, height_cm')
       .in('id', ids);
     const byId = new Map((products || []).map((p: any) => [p.id, p]));
     const dims: Dim[] = items.map((i: any) => {
@@ -182,22 +125,21 @@ Deno.serve(async (req) => {
         length: p.length_cm || DEFAULT_PACKAGE.length,
       };
     });
-    // Demasiado pesado o algún producto más grande que lo que cotiza Correo: tarifa fija (se coordina aparte)
+    const declaredValue = items.reduce((s: number, i: any) => s + (Number(byId.get(i.id)?.price) || 0) * Math.max(1, parseInt(i.qty) || 1), 0);
     const totalWeight = dims.reduce((s, d) => s + d.weight * d.quantity, 0);
     if (totalWeight > MAX_WEIGHT_G || dims.some((d) => Math.max(d.height, d.width, d.length) > MAX_SIDE_CM)) return json(fixed);
 
     try {
-      const rate = await correoHomeRate(originCp, destCp, dims);
-      const name = String(rate.productName || 'envío');
+      const price = await andreaniHomeRate(destCp, dims, declaredValue);
       return json({
-        source: 'correo',
-        price: Math.ceil(Number(rate.price) + recargo),
-        label: (/^correo argentino/i.test(name) ? name : `Correo Argentino — ${name}`) + ' a domicilio',
-        deliveryTimeMin: rate.deliveryTimeMin || null,
-        deliveryTimeMax: rate.deliveryTimeMax || null,
+        source: 'andreani',
+        price: Math.ceil(price + recargo),
+        label: 'Andreani — envío a domicilio',
+        deliveryTimeMin: null,
+        deliveryTimeMax: null,
       });
     } catch (e) {
-      console.error('No se pudo cotizar con Correo Argentino, uso tarifa fija:', e);
+      console.error('No se pudo cotizar con Andreani, uso tarifa fija:', e);
       return json(fixed);
     }
   } catch (err) {

@@ -223,13 +223,10 @@
       </form>
 
       <h3 style="margin-top:40px;">Envíos</h3>
-      <p style="font-size:0.88rem;color:#5C7784;max-width:640px;">Cuando Correo Argentino esté conectado, el envío se cotiza en vivo según el código postal del cliente y el peso y medidas de los productos. Mientras tanto (o si Correo no responde) se cobra la tarifa fija por zona: CABA $4.500, GBA $6.800, interior cercano $8.900 e interior lejano $13.500.</p>
+      <p style="font-size:0.88rem;color:#5C7784;max-width:640px;">Con la cuenta de Andreani conectada, el envío se cotiza en vivo según el código postal del cliente y el peso y medidas de los productos. Mientras tanto (o si Andreani no responde) se cobra la tarifa fija por zona: CABA $4.500, GBA $6.800, interior cercano $8.900 e interior lejano $13.500.</p>
       <form id="shippingForm" class="form-card" style="max-width:640px;margin:0;">
-        <div class="grid grid-2" style="gap:16px;">
-          <div class="field"><label>Código postal de origen</label><input type="text" id="shipOriginCp" placeholder="Desde donde se despacha, ej: 1425"></div>
-          <div class="field"><label>Recargo por envío ($)</label><input type="number" id="shipSurcharge" min="0" placeholder="0"></div>
-        </div>
-        <p style="font-size:0.78rem;color:#8199a3;margin-top:-6px;">El recargo se suma a cada cotización de Correo (por ejemplo, para cubrir el embalaje). No se suma a la tarifa fija.</p>
+        <div class="field" style="max-width:300px;"><label>Recargo por envío ($)</label><input type="number" id="shipSurcharge" min="0" placeholder="0"></div>
+        <p style="font-size:0.78rem;color:#8199a3;margin-top:-6px;">El recargo se suma a cada cotización en vivo (por ejemplo, para cubrir el embalaje). No se suma a la tarifa fija.</p>
         <div id="shippingMsg" style="font-size:0.85rem;margin-bottom:12px;"></div>
         <button type="submit" class="btn btn-primary">Guardar</button>
       </form>
@@ -362,7 +359,7 @@
       </div>
       <p style="font-size:0.78rem;color:#8199a3;margin-top:-10px;">La "Familia" agrupa productos relacionados (ej: la mopa y sus repuestos) para que aparezcan juntos en la tienda.</p>
       <div class="field" style="margin-bottom:6px;">
-        <label>Peso y medidas ya embalado (para cotizar el envío con Correo Argentino)</label>
+        <label>Peso y medidas ya embalado (para cotizar el envío con Andreani)</label>
         <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));gap:10px;">
           <input type="number" id="pWeightG" min="1" max="50000" placeholder="Peso (g)" title="Peso en gramos">
           <input type="number" id="pLengthCm" min="1" max="200" placeholder="Largo (cm)" title="Largo en cm">
@@ -1304,12 +1301,13 @@
     if (!error) document.getElementById('bankCbu').value = value.cbu;
   });
 
-  // ---------- Configuración: envíos (Correo Argentino) ----------
+  // ---------- Configuración: envíos (Andreani) ----------
   const SHIP_PROVINCES = ['Ciudad Autónoma de Buenos Aires', 'Buenos Aires', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba',
     'Corrientes', 'Entre Ríos', 'Formosa', 'Jujuy', 'La Pampa', 'La Rioja', 'Mendoza', 'Misiones', 'Neuquén', 'Río Negro',
     'Salta', 'San Juan', 'San Luis', 'Santa Cruz', 'Santa Fe', 'Santiago del Estero', 'Tierra del Fuego', 'Tucumán'];
   document.getElementById('shipTestProvince').innerHTML = SHIP_PROVINCES.map(p => `<option value="${p}">${p}</option>`).join('');
 
+  let shippingSettings = {};
   async function loadShippingSettings() {
     const { data, error } = await ladSupabase.from('site_settings').select('value').eq('key', 'envios').maybeSingle();
     const msg = document.getElementById('shippingMsg');
@@ -1318,9 +1316,8 @@
       msg.textContent = 'No pudimos cargar la configuración de envíos: ' + error.message;
       return;
     }
-    const value = (data && data.value) || {};
-    document.getElementById('shipOriginCp').value = value.origen_cp || '';
-    document.getElementById('shipSurcharge').value = value.recargo || '';
+    shippingSettings = (data && data.value) || {};
+    document.getElementById('shipSurcharge').value = shippingSettings.recargo || '';
   }
 
   function fillShipTestProducts() {
@@ -1332,13 +1329,8 @@
   document.getElementById('shippingForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const msg = document.getElementById('shippingMsg');
-    const origenCp = document.getElementById('shipOriginCp').value.trim();
-    if (origenCp && !/\d{4}/.test(origenCp)) {
-      msg.style.color = '#A94442';
-      msg.textContent = 'El código postal tiene que tener 4 números (ej: 1425 o C1425ABC).';
-      return;
-    }
-    const value = { origen_cp: origenCp, recargo: Math.max(0, parseInt(document.getElementById('shipSurcharge').value) || 0) };
+    // Conserva lo demás guardado (ej: el CP de origen de Correo Argentino, para cuando se vuelva a sumar)
+    const value = { ...shippingSettings, recargo: Math.max(0, parseInt(document.getElementById('shipSurcharge').value) || 0) };
     const btn = e.target.querySelector('button[type="submit"]');
     btn.disabled = true;
     const { error } = await ladSupabase.from('site_settings')
@@ -1368,9 +1360,9 @@
       return;
     }
     out.style.color = 'var(--navy)';
-    out.innerHTML = data.source === 'correo'
-      ? `<strong>${ladFormatPrice(data.price)}</strong> · ${ladEscape(data.label)} <span style="color:#3d8a5c;">(cotizado en vivo con Correo Argentino)</span>`
-      : `<strong>${ladFormatPrice(data.price)}</strong> · ${ladEscape(data.label)} <span style="color:#8A6417;">(tarifa fija: Correo Argentino todavía no está conectado, falta el código postal de origen o Correo no respondió)</span>`;
+    out.innerHTML = data.source !== 'fixed'
+      ? `<strong>${ladFormatPrice(data.price)}</strong> · ${ladEscape(data.label)} <span style="color:#3d8a5c;">(cotizado en vivo con Andreani)</span>`
+      : `<strong>${ladFormatPrice(data.price)}</strong> · ${ladEscape(data.label)} <span style="color:#8A6417;">(tarifa fija: Andreani todavía no está conectado o no respondió)</span>`;
   });
 
   // ---------- Configuración: optimizar fotos ya subidas ----------

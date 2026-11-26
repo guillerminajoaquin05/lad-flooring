@@ -311,7 +311,7 @@
   }
 
   function shippingLabelText(q) {
-    if (q.source !== 'correo') return 'Envío a ' + document.getElementById('provinciaInfo').value;
+    if (q.source === 'fixed') return 'Envío a ' + document.getElementById('provinciaInfo').value;
     const days = q.deliveryTimeMin && q.deliveryTimeMax
       ? ` (llega en ${q.deliveryTimeMin === q.deliveryTimeMax ? q.deliveryTimeMin : q.deliveryTimeMin + ' a ' + q.deliveryTimeMax} días hábiles)`
       : '';
